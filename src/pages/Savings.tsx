@@ -86,12 +86,148 @@ const AddMoneyDialog = ({ goalId, goalTitle, onAddMoney }: { goalId: string; goa
   );
 };
 
+// Transaction History Dialog Component
+const TransactionHistoryDialog = ({ 
+  goalId, 
+  goalTitle, 
+  isOpen, 
+  onClose 
+}: { 
+  goalId: string; 
+  goalTitle: string; 
+  isOpen: boolean; 
+  onClose: () => void; 
+}) => {
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchGoalTransactions = async () => {
+    if (!user || !goalId) return;
+    
+    setLoading(true);
+    try {
+      // Fetch transactions related to this savings goal
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('category', 'Savings')
+        .ilike('description', `%${goalTitle}%`)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching goal transactions:', error);
+      toast.error('Failed to load transaction history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && goalId) {
+      fetchGoalTransactions();
+    }
+  }, [isOpen, goalId, user]);
+
+  const totalContributions = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Eye className="w-5 h-5 mr-2 text-accent-vivid" />
+            Transaction History - {goalTitle}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          {/* Summary */}
+          <Card className="gradient-card border-0">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-savings">₹{totalContributions.toLocaleString()}</div>
+                  <div className="text-xs text-muted-foreground">Total Contributions</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-accent-vivid">{transactions.length}</div>
+                  <div className="text-xs text-muted-foreground">Total Transactions</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Transaction List */}
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading transaction history...</p>
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center py-8 bg-muted/30 rounded-lg">
+                <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No transactions found for this savings goal yet.</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Transactions will appear here when you add money to this goal.
+                </p>
+              </div>
+            ) : (
+              transactions.map((transaction) => (
+                <Card key={transaction.id} className="border border-border/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-savings/20 flex items-center justify-center">
+                          <Gift className="w-5 h-5 text-savings" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-card-foreground">{transaction.description}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(transaction.date).toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded-full bg-savings/10 text-savings">
+                              {transaction.mode}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <p className="font-bold text-lg text-savings">
+                          +₹{Math.abs(transaction.amount).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Contribution</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Savings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string>("");
+  const [selectedGoalTitle, setSelectedGoalTitle] = useState<string>("");
   const [newGoal, setNewGoal] = useState({
     title: "",
     target_amount: "",
@@ -272,13 +408,9 @@ const Savings = () => {
   };
 
   const handleViewHistory = (goalId: string, goalTitle: string) => {
-    // Navigate to transactions page with savings goal filter
-    navigate('/transactions', {
-      state: {
-        filterBySavingsGoal: goalId,
-        savingsGoalTitle: goalTitle
-      }
-    });
+    setSelectedGoalId(goalId);
+    setSelectedGoalTitle(goalTitle);
+    setHistoryDialogOpen(true);
   };
 
   return (
@@ -553,6 +685,14 @@ const Savings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Transaction History Dialog */}
+        <TransactionHistoryDialog
+          goalId={selectedGoalId}
+          goalTitle={selectedGoalTitle}
+          isOpen={historyDialogOpen}
+          onClose={() => setHistoryDialogOpen(false)}
+        />
       </div>
     </Layout>
   );
