@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Layout } from "@/components/Layout";
-import { Search, Filter, Download, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Search, Filter, Download, ArrowUpRight, ArrowDownRight, X } from "lucide-react";
 import { useBudget } from "@/contexts/BudgetContext";
+import { useLocation } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const dummyTransactions = [
   {
@@ -87,9 +89,20 @@ const modes = ["All", "UPI", "Card", "Bank Transfer"];
 
 const Transactions = () => {
   const { transactions, getTotalIncome, getTotalSpent } = useBudget();
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedMode, setSelectedMode] = useState("All");
+  const [savingsGoalFilter, setSavingsGoalFilter] = useState<string | null>(null);
+  const [savingsGoalTitle, setSavingsGoalTitle] = useState<string>("");
+
+  // Check if navigated from savings goal view history
+  useEffect(() => {
+    if (location.state?.filterBySavingsGoal) {
+      setSavingsGoalFilter(location.state.filterBySavingsGoal);
+      setSavingsGoalTitle(location.state.savingsGoalTitle || "");
+    }
+  }, [location.state]);
 
   // Combine context transactions with dummy data if needed
   const allTransactions = transactions.length > 0 ? transactions : dummyTransactions;
@@ -140,6 +153,28 @@ const Transactions = () => {
             Export
           </Button>
         </div>
+
+        {/* Savings Goal Filter Alert */}
+        {savingsGoalFilter && (
+          <Alert className="border-savings bg-savings/10">
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-savings">
+                Showing transactions related to savings goal: <strong>{savingsGoalTitle}</strong>
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSavingsGoalFilter(null);
+                  setSavingsGoalTitle("");
+                }}
+                className="h-auto p-1 text-savings hover:text-savings/80"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Filters */}
         <Card className="gradient-card shadow-card border-0">

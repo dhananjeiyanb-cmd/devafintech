@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface SavingsGoal {
   id: string;
@@ -87,6 +88,7 @@ const AddMoneyDialog = ({ goalId, goalTitle, onAddMoney }: { goalId: string; goa
 
 const Savings = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -270,10 +272,13 @@ const Savings = () => {
   };
 
   const handleViewHistory = (goalId: string, goalTitle: string) => {
-    // Navigate to transactions page filtered by this goal
-    // For now showing filtered view in dialog
-    toast.info(`Viewing transaction history for "${goalTitle}"`);
-    // TODO: Implement actual transaction history view
+    // Navigate to transactions page with savings goal filter
+    navigate('/transactions', {
+      state: {
+        filterBySavingsGoal: goalId,
+        savingsGoalTitle: goalTitle
+      }
+    });
   };
 
   return (
