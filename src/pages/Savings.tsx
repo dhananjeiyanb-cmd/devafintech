@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBudget } from "@/contexts/BudgetContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -221,6 +222,7 @@ const TransactionHistoryDialog = ({
 
 const Savings = () => {
   const { user } = useAuth();
+  const { refreshTransactions } = useBudget(); // Get refresh function from budget context
   const navigate = useNavigate();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -383,22 +385,56 @@ const Savings = () => {
   const handleAddMoney = async (goalId: string, amount: number) => {
     try {
       const goal = goals.find(g => g.id === goalId);
-      if (!goal) return;
+      if (!goal || !user) return;
+
+      // Get user profile to get tenant_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
 
       const newCurrentAmount = goal.current_amount + amount;
 
-      const { error } = await supabase
+      // Update the savings goal amount
+      const { error: goalError } = await supabase
         .from('savings_goals')
         .update({ current_amount: newCurrentAmount })
         .eq('id', goalId);
 
-      if (error) throw error;
+      if (goalError) throw goalError;
+
+      // Create a transaction record for this savings contribution
+      const transactionData = {
+        user_id: user.id,
+        tenant_id: profile.tenant_id,
+        date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+        description: `Savings: ${goal.title}`,
+        amount: -amount, // Negative because it's money going out (into savings)
+        category: 'Savings',
+        mode: 'Savings Transfer',
+        status: 'completed'
+      };
+
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert([transactionData]);
+
+      if (transactionError) {
+        console.error('Transaction creation error:', transactionError);
+        // Don't fail the savings addition if transaction creation fails
+      }
 
       setGoals(goals.map(g => 
         g.id === goalId 
           ? { ...g, current_amount: newCurrentAmount }
           : g
       ));
+      
+      // Refresh transactions in budget context so they show up on Transactions page
+      await refreshTransactions();
       
       toast.success(`₹${amount.toLocaleString()} added to ${goal.title}!`);
     } catch (error) {

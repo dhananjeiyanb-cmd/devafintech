@@ -37,6 +37,7 @@ interface BudgetContextType {
   addIncome: (income: Omit<IncomeSource, 'id'>) => void;
   addBudget: (budget: Omit<BudgetCategory, 'id' | 'spent'>) => void;
   processPayment: (payment: { amount: number; description: string; category: string; merchant: string }) => void;
+  refreshTransactions: () => Promise<void>;
   getTotalBudget: () => number;
   getTotalSpent: () => number;
   getTotalIncome: () => number;
@@ -283,6 +284,25 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return totalIncome > 0 ? Math.round((savings / totalIncome) * 100) : 0;
   };
 
+  const refreshTransactions = async () => {
+    if (!user || !tenantId) return;
+
+    try {
+      const { data: transactionData } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (transactionData) {
+        setTransactions(transactionData);
+      }
+    } catch (error) {
+      console.error('Error refreshing transactions:', error);
+    }
+  };
+
   const value: BudgetContextType = {
     budgets,
     income,
@@ -291,6 +311,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addIncome,
     addBudget,
     processPayment,
+    refreshTransactions,
     getTotalBudget,
     getTotalSpent,
     getTotalIncome,
