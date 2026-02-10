@@ -4,23 +4,24 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface BudgetCategory {
-  id: number;
+  id: string;
   name: string;
-  budget: number;
+  allocated: number;
   spent: number;
   color: string;
   icon: string;
+  category: string;
 }
 
 export interface IncomeSource {
-  id: number;
-  name: string;
+  id: string;
+  source: string;
   amount: number;
   date: string;
 }
 
 export interface Transaction {
-  id: number;
+  id: string;
   date: string;
   description: string;
   amount: number;
@@ -34,8 +35,8 @@ interface BudgetContextType {
   income: IncomeSource[];
   transactions: Transaction[];
   setBudgets: (budgets: BudgetCategory[]) => void;
-  addIncome: (income: Omit<IncomeSource, 'id'>) => void;
-  addBudget: (budget: Omit<BudgetCategory, 'id' | 'spent'>) => void;
+  addIncome: (income: { name: string; amount: number; date: string }) => void;
+  addBudget: (budget: { name: string; budget: number; color: string; icon: string }) => void;
   processPayment: (payment: { amount: number; description: string; category: string; merchant: string }) => void;
   refreshTransactions: () => Promise<void>;
   getTotalBudget: () => number;
@@ -55,12 +56,10 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [tenantId, setTenantId] = useState<string | null>(null);
   const { user } = useAuth();
 
-  // Load tenant ID and data when user changes
   useEffect(() => {
     if (user) {
       loadTenantIdAndData();
     } else {
-      // Clear data when user logs out
       setBudgets([]);
       setIncome([]);
       setTransactions([]);
@@ -72,7 +71,6 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
 
     try {
-      // Get tenant ID from profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
@@ -92,23 +90,20 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
 
     try {
-      // Load budgets
       const { data: budgetData } = await supabase
-        .from('budget_categories')
+        .from('budgets')
         .select('*')
         .eq('user_id', user.id)
         .eq('tenant_id', currentTenantId)
         .order('created_at', { ascending: false });
 
-      // Load income
       const { data: incomeData } = await supabase
-        .from('income_sources')
+        .from('income')
         .select('*')
         .eq('user_id', user.id)
         .eq('tenant_id', currentTenantId)
         .order('created_at', { ascending: false });
 
-      // Load transactions
       const { data: transactionData } = await supabase
         .from('transactions')
         .select('*')
@@ -116,26 +111,27 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         .eq('tenant_id', currentTenantId)
         .order('created_at', { ascending: false });
 
-      if (budgetData) setBudgets(budgetData);
-      if (incomeData) setIncome(incomeData);
-      if (transactionData) setTransactions(transactionData);
+      if (budgetData) setBudgets(budgetData as unknown as BudgetCategory[]);
+      if (incomeData) setIncome(incomeData as unknown as IncomeSource[]);
+      if (transactionData) setTransactions(transactionData as unknown as Transaction[]);
     } catch (error) {
       console.error('Error loading data:', error);
     }
   };
 
-  const addIncome = async (newIncome: Omit<IncomeSource, 'id'>) => {
+  const addIncome = async (newIncome: { name: string; amount: number; date: string }) => {
     if (!user || !tenantId) {
       toast.error('User not authenticated or tenant ID not found');
       return;
     }
 
     try {
-      // Save to Supabase
       const { data: incomeData } = await supabase
-        .from('income_sources')
+        .from('income')
         .insert([{ 
-          ...newIncome, 
+          source: newIncome.name,
+          amount: newIncome.amount,
+          date: newIncome.date,
           user_id: user.id,
           tenant_id: tenantId 
         }])
@@ -143,10 +139,9 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         .single();
 
       if (incomeData) {
-        setIncome([incomeData, ...income]);
+        setIncome([incomeData as unknown as IncomeSource, ...income]);
       }
 
-      // Add transaction entry
       const { data: transactionData } = await supabase
         .from('transactions')
         .insert([{
@@ -163,7 +158,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         .single();
 
       if (transactionData) {
-        setTransactions([transactionData, ...transactions]);
+        setTransactions([transactionData as unknown as Transaction, ...transactions]);
       }
 
       toast.success('Income added successfully!');
@@ -173,7 +168,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const addBudget = async (newBudget: Omit<BudgetCategory, 'id' | 'spent'>) => {
+  const addBudget = async (newBudget: { name: string; budget: number; color: string; icon: string }) => {
     if (!user || !tenantId) {
       toast.error('User not authenticated or tenant ID not found');
       return;
@@ -181,9 +176,12 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     try {
       const { data } = await supabase
-        .from('budget_categories')
+        .from('budgets')
         .insert([{ 
-          ...newBudget, 
+          name: newBudget.name,
+          allocated: newBudget.budget,
+          color: newBudget.color,
+          icon: newBudget.icon,
           user_id: user.id, 
           tenant_id: tenantId,
           spent: 0 
@@ -192,7 +190,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         .single();
 
       if (data) {
-        setBudgets([...budgets, data]);
+        setBudgets([...budgets, data as unknown as BudgetCategory]);
         toast.success('Budget category added successfully!');
       }
     } catch (error) {
@@ -208,7 +206,6 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     try {
-      // Add transaction for the payment
       const { data: transactionData } = await supabase
         .from('transactions')
         .insert([{
@@ -225,14 +222,13 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         .single();
 
       if (transactionData) {
-        setTransactions([transactionData, ...transactions]);
+        setTransactions([transactionData as unknown as Transaction, ...transactions]);
       }
 
-      // Update budget spent amount for the category
       const budgetToUpdate = budgets.find(b => b.name === payment.category);
       if (budgetToUpdate) {
         const { data: updatedBudget } = await supabase
-          .from('budget_categories')
+          .from('budgets')
           .update({ spent: budgetToUpdate.spent + payment.amount })
           .eq('id', budgetToUpdate.id)
           .eq('user_id', user.id)
@@ -242,7 +238,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         if (updatedBudget) {
           const updatedBudgets = budgets.map(budget => 
-            budget.id === updatedBudget.id ? updatedBudget : budget
+            budget.id === (updatedBudget as any).id ? updatedBudget as unknown as BudgetCategory : budget
           );
           setBudgets(updatedBudgets);
         }
@@ -256,7 +252,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const getTotalBudget = () => {
-    return budgets.reduce((sum, category) => sum + category.budget, 0);
+    return budgets.reduce((sum, category) => sum + category.allocated, 0);
   };
 
   const getTotalSpent = () => {
@@ -296,7 +292,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         .order('created_at', { ascending: false });
 
       if (transactionData) {
-        setTransactions(transactionData);
+        setTransactions(transactionData as unknown as Transaction[]);
       }
     } catch (error) {
       console.error('Error refreshing transactions:', error);

@@ -7,100 +7,81 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
-      budget_categories: {
+      budgets: {
         Row: {
-          budget: number | null
-          color: string | null
+          allocated: number
+          category: string
+          color: string
           created_at: string
-          icon: string | null
-          id: number
+          icon: string
+          id: string
           name: string
-          spent: number | null
+          spent: number
           tenant_id: string
-          updated_at: string
           user_id: string
         }
         Insert: {
-          budget?: number | null
-          color?: string | null
+          allocated?: number
+          category?: string
+          color?: string
           created_at?: string
-          icon?: string | null
-          id?: number
+          icon?: string
+          id?: string
           name: string
-          spent?: number | null
+          spent?: number
           tenant_id: string
-          updated_at?: string
           user_id: string
         }
         Update: {
-          budget?: number | null
-          color?: string | null
+          allocated?: number
+          category?: string
+          color?: string
           created_at?: string
-          icon?: string | null
-          id?: number
+          icon?: string
+          id?: string
           name?: string
-          spent?: number | null
+          spent?: number
           tenant_id?: string
-          updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "budget_categories_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["tenant_id"]
-          },
-        ]
+        Relationships: []
       }
-      income_sources: {
+      income: {
         Row: {
-          amount: number | null
+          amount: number
           created_at: string
           date: string
-          id: number
-          name: string
+          id: string
+          source: string
           tenant_id: string
-          updated_at: string
           user_id: string
         }
         Insert: {
-          amount?: number | null
-          created_at?: string
-          date: string
-          id?: number
-          name: string
-          tenant_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number | null
+          amount?: number
           created_at?: string
           date?: string
-          id?: number
-          name?: string
+          id?: string
+          source: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          source?: string
           tenant_id?: string
-          updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "income_sources_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["tenant_id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -116,7 +97,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
-          tenant_id: string
+          tenant_id?: string
           updated_at?: string
         }
         Update: {
@@ -133,46 +114,43 @@ export type Database = {
         Row: {
           amount: number
           auto_pay: boolean | null
-          category: string
+          category: string | null
           created_at: string
           description: string | null
           due_date: string
-          frequency: string
+          frequency: string | null
           id: string
-          status: string
+          status: string | null
           tenant_id: string
           title: string
-          updated_at: string
           user_id: string
         }
         Insert: {
           amount?: number
           auto_pay?: boolean | null
-          category?: string
+          category?: string | null
           created_at?: string
           description?: string | null
           due_date: string
-          frequency?: string
+          frequency?: string | null
           id?: string
-          status?: string
+          status?: string | null
           tenant_id: string
           title: string
-          updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
           auto_pay?: boolean | null
-          category?: string
+          category?: string | null
           created_at?: string
           description?: string | null
           due_date?: string
-          frequency?: string
+          frequency?: string | null
           id?: string
-          status?: string
+          status?: string | null
           tenant_id?: string
           title?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -180,53 +158,56 @@ export type Database = {
       savings_goals: {
         Row: {
           auto_debit: boolean | null
+          auto_save: boolean | null
+          auto_save_amount: number | null
           created_at: string
           current_amount: number
-          description: string | null
+          deadline: string | null
           icon: string | null
           id: string
           monthly_contribution: number | null
           priority: string | null
-          status: string
+          status: string | null
           target_amount: number
           target_date: string | null
           tenant_id: string
           title: string
-          updated_at: string
           user_id: string
         }
         Insert: {
           auto_debit?: boolean | null
+          auto_save?: boolean | null
+          auto_save_amount?: number | null
           created_at?: string
           current_amount?: number
-          description?: string | null
+          deadline?: string | null
           icon?: string | null
           id?: string
           monthly_contribution?: number | null
           priority?: string | null
-          status?: string
+          status?: string | null
           target_amount?: number
           target_date?: string | null
           tenant_id: string
           title: string
-          updated_at?: string
           user_id: string
         }
         Update: {
           auto_debit?: boolean | null
+          auto_save?: boolean | null
+          auto_save_amount?: number | null
           created_at?: string
           current_amount?: number
-          description?: string | null
+          deadline?: string | null
           icon?: string | null
           id?: string
           monthly_contribution?: number | null
           priority?: string | null
-          status?: string
+          status?: string | null
           target_amount?: number
           target_date?: string | null
           tenant_id?: string
           title?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -238,24 +219,22 @@ export type Database = {
           created_at: string
           date: string
           description: string
-          id: number
+          id: string
           mode: string | null
           status: string | null
           tenant_id: string
-          updated_at: string
           user_id: string
         }
         Insert: {
           amount: number
-          category: string
+          category?: string
           created_at?: string
           date: string
           description: string
-          id?: number
+          id?: string
           mode?: string | null
           status?: string | null
           tenant_id: string
-          updated_at?: string
           user_id: string
         }
         Update: {
@@ -264,32 +243,20 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
-          id?: number
+          id?: string
           mode?: string | null
           status?: string | null
           tenant_id?: string
-          updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["tenant_id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      generate_tenant_id: {
-        Args: { user_name: string }
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

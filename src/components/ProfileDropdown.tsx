@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import {
@@ -59,51 +59,16 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onSignOut }) =>
         return;
       }
 
-      setProfile(data);
+      setProfile({
+        id: data.id,
+        full_name: data.full_name,
+        avatar_url: data.avatar_url,
+        tenant_id: data.tenant_id,
+      });
       setFullName(data.full_name || '');
     } catch (error) {
       console.error('Error:', error);
     }
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    if (!user) return;
-
-    setIsUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      const avatarUrl = data.publicUrl;
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: avatarUrl })
-        .eq('id', user.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
-      toast({ title: "Avatar updated successfully!" });
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({ title: "Error uploading avatar", variant: "destructive" });
-    }
-    setIsUploading(false);
   };
 
   const handleProfileUpdate = async () => {
@@ -120,10 +85,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onSignOut }) =>
       }
 
       setProfile(prev => prev ? { ...prev, full_name: fullName } : null);
-      
-      if (avatarFile) {
-        await handleAvatarUpload(avatarFile);
-      }
 
       setIsProfileDialogOpen(false);
       toast({ title: "Profile updated successfully!" });
@@ -201,27 +162,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onSignOut }) =>
                       {getInitials(displayName)}
                     </AvatarFallback>
                   </Avatar>
-                  
-                  <div className="flex flex-col items-center space-y-2">
-                    <Label htmlFor="avatar-upload" className="cursor-pointer">
-                      <div className="flex items-center space-x-2 text-sm text-primary hover:text-primary/80">
-                        <Upload className="h-4 w-4" />
-                        <span>Upload Avatar</span>
-                      </div>
-                    </Label>
-                    <Input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setAvatarFile(file);
-                        }
-                      }}
-                    />
-                  </div>
                 </div>
 
                 <div className="space-y-2">
