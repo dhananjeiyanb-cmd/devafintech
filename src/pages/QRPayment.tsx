@@ -35,9 +35,9 @@ const QRPayment = () => {
 
   // Get current budget for the selected category
   const currentBudget = budgets.find(b => b.name === paymentDetails.category);
-  const remainingBudget = currentBudget ? currentBudget.budget - currentBudget.spent : 0;
+  const remainingBudget = currentBudget ? currentBudget.allocated - currentBudget.spent : 0;
   const isOverBudget = currentBudget ? paymentDetails.amount > remainingBudget : false;
-  const budgetUsageAfterPayment = currentBudget ? ((currentBudget.spent + paymentDetails.amount) / currentBudget.budget) * 100 : 0;
+  const budgetUsageAfterPayment = currentBudget ? ((currentBudget.spent + paymentDetails.amount) / currentBudget.allocated) * 100 : 0;
   
   // Check if user has sufficient balance
   const currentBalance = getCurrentBalance();
@@ -406,7 +406,7 @@ const QRPayment = () => {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Budget limit</span>
-                      <span className="text-card-foreground">₹{currentBudget.budget.toLocaleString()}</span>
+                      <span className="text-card-foreground">₹{currentBudget.allocated.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm font-medium">
                       <span className="text-muted-foreground">After this payment</span>

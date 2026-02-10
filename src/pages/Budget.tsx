@@ -265,7 +265,7 @@ const Budget = () => {
                 {income.map((source) => (
                   <div key={source.id} className="flex items-center justify-between p-3 rounded-lg bg-income/10 border border-income/20">
                     <div>
-                      <p className="font-medium text-card-foreground">{source.name}</p>
+                      <p className="font-medium text-card-foreground">{(source as any).source || (source as any).name}</p>
                       <p className="text-sm text-muted-foreground">{new Date(source.date).toLocaleDateString()}</p>
                     </div>
                     <p className="font-bold text-income">₹{source.amount.toLocaleString()}</p>
@@ -324,8 +324,8 @@ const Budget = () => {
         {/* Budget Categories */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {budgets.map((category) => {
-            const percentage = (category.spent / category.budget) * 100;
-            const status = getBudgetStatus(category.spent, category.budget);
+            const percentage = (category.spent / category.allocated) * 100;
+            const status = getBudgetStatus(category.spent, category.allocated);
             const StatusIcon = status.icon;
 
             return (
@@ -337,7 +337,7 @@ const Budget = () => {
                       <div>
                         <CardTitle className="text-lg text-card-foreground">{category.name}</CardTitle>
                         <p className="text-sm text-muted-foreground">
-                          ₹{category.spent.toLocaleString()} / ₹{category.budget.toLocaleString()}
+                          ₹{category.spent.toLocaleString()} / ₹{category.allocated.toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -358,11 +358,11 @@ const Budget = () => {
                       {percentage >= 100 && (
                         <div className="flex items-center">
                           <TrendingDown className="w-4 h-4 mr-1" />
-                          Over by ₹{(category.spent - category.budget).toLocaleString()}
+                          Over by ₹{(category.spent - category.allocated).toLocaleString()}
                         </div>
                       )}
                       {percentage < 100 && (
-                        <div>₹{(category.budget - category.spent).toLocaleString()} remaining</div>
+                        <div>₹{(category.allocated - category.spent).toLocaleString()} remaining</div>
                       )}
                     </span>
                   </div>
@@ -447,7 +447,7 @@ const Budget = () => {
                       <div className="p-3 bg-muted rounded-lg">
                         <p className="text-sm text-muted-foreground">Actual Budget</p>
                         <p className="text-lg font-bold text-card-foreground">
-                          ₹{budgets.find(b => b.name === budgetInfo.category)?.budget.toLocaleString() || "0"}
+                          ₹{budgets.find(b => b.name === budgetInfo.category)?.allocated.toLocaleString() || "0"}
                         </p>
                       </div>
                       <div className="p-3 bg-muted rounded-lg">
