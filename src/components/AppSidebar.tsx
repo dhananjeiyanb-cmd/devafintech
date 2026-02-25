@@ -9,8 +9,8 @@ import {
   LogOut,
   TrendingUp,
   CalendarDays,
-  PlusCircle,
-  BarChart3
+  BarChart3,
+  FileText
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -27,12 +27,12 @@ import {
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Add Expense", url: "/add-expense", icon: PlusCircle },
   { title: "Transactions", url: "/transactions", icon: CreditCard },
   { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Budget Management", url: "/budget", icon: Target },
   { title: "Savings Goals", url: "/savings", icon: PiggyBank },
   { title: "Bill Reminders", url: "/reminders", icon: CalendarDays },
+  { title: "Form 16", url: "/form16", icon: FileText },
   { title: "Alerts & Notifications", url: "/alerts", icon: Bell },
   { title: "QR Payment", url: "/qr-payment", icon: QrCode },
   { title: "Profile", url: "/profile", icon: User },

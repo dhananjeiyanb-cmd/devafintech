@@ -14,8 +14,8 @@ import Savings from "@/pages/Savings";
 import Alerts from "@/pages/Alerts";
 import Profile from "@/pages/Profile";
 import Reminders from "@/pages/Reminders";
-import AddExpense from "@/pages/AddExpense";
 import Reports from "@/pages/Reports";
+import Form16 from "@/pages/Form16";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,8 +32,9 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/budget" element={<Budget />} />
               <Route path="/transactions" element={<Transactions />} />
-              <Route path="/add-expense" element={<AddExpense />} />
+              <Route path="/add-expense" element={<Navigate to="/transactions" replace />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/form16" element={<Form16 />} />
               <Route path="/qr-payment" element={<QRPayment />} />
               <Route path="/savings" element={<Savings />} />
               <Route path="/alerts" element={<Alerts />} />

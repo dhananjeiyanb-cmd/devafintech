@@ -37,6 +37,8 @@ interface BudgetContextType {
   setBudgets: (budgets: BudgetCategory[]) => void;
   addIncome: (income: { name: string; amount: number; date: string }) => void;
   addBudget: (budget: { name: string; budget: number; color: string; icon: string }) => void;
+  updateBudgetAmount: (budgetId: string, newAmount: number) => Promise<boolean>;
+  deleteBudget: (budgetId: string) => Promise<void>;
   processPayment: (payment: { amount: number; description: string; category: string; merchant: string }) => void;
   refreshTransactions: () => Promise<void>;
   getTotalBudget: () => number;
@@ -69,14 +71,12 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const loadTenantIdAndData = async () => {
     if (!user) return;
-
     try {
       const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', user.id)
         .single();
-
       if (profile?.tenant_id) {
         setTenantId(profile.tenant_id);
         await loadData(profile.tenant_id);
@@ -88,28 +88,13 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const loadData = async (currentTenantId: string) => {
     if (!user) return;
-
     try {
-      const { data: budgetData } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('tenant_id', currentTenantId)
-        .order('created_at', { ascending: false });
-
-      const { data: incomeData } = await supabase
-        .from('income')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('tenant_id', currentTenantId)
-        .order('created_at', { ascending: false });
-
-      const { data: transactionData } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('tenant_id', currentTenantId)
-        .order('created_at', { ascending: false });
+      const { data: budgetData } = await supabase.from('budgets').select('*')
+        .eq('user_id', user.id).eq('tenant_id', currentTenantId).order('created_at', { ascending: false });
+      const { data: incomeData } = await supabase.from('income').select('*')
+        .eq('user_id', user.id).eq('tenant_id', currentTenantId).order('created_at', { ascending: false });
+      const { data: transactionData } = await supabase.from('transactions').select('*')
+        .eq('user_id', user.id).eq('tenant_id', currentTenantId).order('created_at', { ascending: false });
 
       if (budgetData) setBudgets(budgetData as unknown as BudgetCategory[]);
       if (incomeData) setIncome(incomeData as unknown as IncomeSource[]);
@@ -120,47 +105,17 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addIncome = async (newIncome: { name: string; amount: number; date: string }) => {
-    if (!user || !tenantId) {
-      toast.error('User not authenticated or tenant ID not found');
-      return;
-    }
-
+    if (!user || !tenantId) { toast.error('User not authenticated'); return; }
     try {
-      const { data: incomeData } = await supabase
-        .from('income')
-        .insert([{ 
-          source: newIncome.name,
-          amount: newIncome.amount,
-          date: newIncome.date,
-          user_id: user.id,
-          tenant_id: tenantId 
-        }])
-        .select()
-        .single();
+      const { data: incomeData } = await supabase.from('income')
+        .insert([{ source: newIncome.name, amount: newIncome.amount, date: newIncome.date, user_id: user.id, tenant_id: tenantId }])
+        .select().single();
+      if (incomeData) setIncome([incomeData as unknown as IncomeSource, ...income]);
 
-      if (incomeData) {
-        setIncome([incomeData as unknown as IncomeSource, ...income]);
-      }
-
-      const { data: transactionData } = await supabase
-        .from('transactions')
-        .insert([{
-          user_id: user.id,
-          tenant_id: tenantId,
-          date: newIncome.date,
-          description: `${newIncome.name} Credit`,
-          amount: newIncome.amount,
-          category: "Income",
-          mode: "Bank Transfer",
-          status: "completed"
-        }])
-        .select()
-        .single();
-
-      if (transactionData) {
-        setTransactions([transactionData as unknown as Transaction, ...transactions]);
-      }
-
+      const { data: transactionData } = await supabase.from('transactions')
+        .insert([{ user_id: user.id, tenant_id: tenantId, date: newIncome.date, description: `${newIncome.name} Credit`, amount: newIncome.amount, category: "Income", mode: "Bank Transfer", status: "completed" }])
+        .select().single();
+      if (transactionData) setTransactions([transactionData as unknown as Transaction, ...transactions]);
       toast.success('Income added successfully!');
     } catch (error) {
       console.error('Error adding income:', error);
@@ -169,26 +124,23 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addBudget = async (newBudget: { name: string; budget: number; color: string; icon: string }) => {
-    if (!user || !tenantId) {
-      toast.error('User not authenticated or tenant ID not found');
+    if (!user || !tenantId) { toast.error('User not authenticated'); return; }
+    
+    // Check current balance
+    const balance = getTotalIncome() - getTotalSpent();
+    if (balance <= 0) {
+      toast.error('Insufficient balance. Add income first before creating a budget.');
+      return;
+    }
+    if (newBudget.budget > balance) {
+      toast.error(`Budget amount ₹${newBudget.budget.toLocaleString()} exceeds available balance ₹${Math.round(balance).toLocaleString()}`);
       return;
     }
 
     try {
-      const { data } = await supabase
-        .from('budgets')
-        .insert([{ 
-          name: newBudget.name,
-          allocated: newBudget.budget,
-          color: newBudget.color,
-          icon: newBudget.icon,
-          user_id: user.id, 
-          tenant_id: tenantId,
-          spent: 0 
-        }])
-        .select()
-        .single();
-
+      const { data } = await supabase.from('budgets')
+        .insert([{ name: newBudget.name, allocated: newBudget.budget, color: newBudget.color, icon: newBudget.icon, user_id: user.id, tenant_id: tenantId, spent: 0 }])
+        .select().single();
       if (data) {
         setBudgets([...budgets, data as unknown as BudgetCategory]);
         toast.success('Budget category added successfully!');
@@ -199,51 +151,76 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const processPayment = async (payment: { amount: number; description: string; category: string; merchant: string }) => {
-    if (!user || !tenantId) {
-      toast.error('User not authenticated or tenant ID not found');
-      return;
+  const updateBudgetAmount = async (budgetId: string, newAmount: number): Promise<boolean> => {
+    if (!user || !tenantId) { toast.error('User not authenticated'); return false; }
+    
+    const budget = budgets.find(b => b.id === budgetId);
+    if (!budget) return false;
+
+    const increase = newAmount - budget.allocated;
+    if (increase > 0) {
+      const balance = getTotalIncome() - getTotalSpent();
+      const availableForIncrease = balance - budgets.reduce((s, b) => s + b.allocated, 0) + budget.allocated;
+      // Simplified: check if increase fits in remaining unallocated balance
+      const totalAllocatedOthers = budgets.filter(b => b.id !== budgetId).reduce((s, b) => s + b.allocated, 0);
+      const totalIncome = getTotalIncome();
+      const totalSpent = getTotalSpent();
+      const currentBalance = totalIncome - totalSpent;
+      
+      if (newAmount > currentBalance - totalAllocatedOthers + budget.allocated) {
+        toast.error('Insufficient balance to increase this budget');
+        return false;
+      }
     }
 
     try {
-      const { data: transactionData } = await supabase
-        .from('transactions')
-        .insert([{
-          user_id: user.id,
-          tenant_id: tenantId,
-          date: new Date().toISOString().split('T')[0],
-          description: `${payment.merchant} - ${payment.description}`,
-          amount: -payment.amount,
-          category: payment.category,
-          mode: "UPI",
-          status: "completed"
-        }])
-        .select()
-        .single();
+      const { error } = await supabase.from('budgets')
+        .update({ allocated: newAmount })
+        .eq('id', budgetId).eq('user_id', user.id);
+      if (error) throw error;
+      setBudgets(budgets.map(b => b.id === budgetId ? { ...b, allocated: newAmount } : b));
+      toast.success('Budget updated!');
+      return true;
+    } catch (error) {
+      console.error('Error updating budget:', error);
+      toast.error('Failed to update budget');
+      return false;
+    }
+  };
 
-      if (transactionData) {
-        setTransactions([transactionData as unknown as Transaction, ...transactions]);
-      }
+  const deleteBudget = async (budgetId: string) => {
+    if (!user || !tenantId) { toast.error('User not authenticated'); return; }
+    try {
+      const { error } = await supabase.from('budgets')
+        .delete().eq('id', budgetId).eq('user_id', user.id);
+      if (error) throw error;
+      const deleted = budgets.find(b => b.id === budgetId);
+      setBudgets(budgets.filter(b => b.id !== budgetId));
+      toast.success(`Budget "${deleted?.name}" deleted. ₹${deleted?.allocated.toLocaleString()} returned to balance.`);
+    } catch (error) {
+      console.error('Error deleting budget:', error);
+      toast.error('Failed to delete budget');
+    }
+  };
+
+  const processPayment = async (payment: { amount: number; description: string; category: string; merchant: string }) => {
+    if (!user || !tenantId) { toast.error('User not authenticated'); return; }
+    try {
+      const { data: transactionData } = await supabase.from('transactions')
+        .insert([{ user_id: user.id, tenant_id: tenantId, date: new Date().toISOString().split('T')[0], description: `${payment.merchant} - ${payment.description}`, amount: -payment.amount, category: payment.category, mode: "UPI", status: "completed" }])
+        .select().single();
+      if (transactionData) setTransactions([transactionData as unknown as Transaction, ...transactions]);
 
       const budgetToUpdate = budgets.find(b => b.name === payment.category);
       if (budgetToUpdate) {
-        const { data: updatedBudget } = await supabase
-          .from('budgets')
+        const { data: updatedBudget } = await supabase.from('budgets')
           .update({ spent: budgetToUpdate.spent + payment.amount })
-          .eq('id', budgetToUpdate.id)
-          .eq('user_id', user.id)
-          .eq('tenant_id', tenantId)
-          .select()
-          .single();
-
+          .eq('id', budgetToUpdate.id).eq('user_id', user.id).eq('tenant_id', tenantId)
+          .select().single();
         if (updatedBudget) {
-          const updatedBudgets = budgets.map(budget => 
-            budget.id === (updatedBudget as any).id ? updatedBudget as unknown as BudgetCategory : budget
-          );
-          setBudgets(updatedBudgets);
+          setBudgets(budgets.map(b => b.id === (updatedBudget as any).id ? updatedBudget as unknown as BudgetCategory : b));
         }
       }
-
       toast.success('Payment processed successfully!');
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -251,82 +228,39 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const getTotalBudget = () => {
-    return budgets.reduce((sum, category) => sum + category.allocated, 0);
-  };
-
-  const getTotalSpent = () => {
-    return budgets.reduce((sum, category) => sum + category.spent, 0);
-  };
-
-  const getTotalIncome = () => {
-    return income.reduce((sum, source) => sum + source.amount, 0);
-  };
-
-  const getCurrentBalance = () => {
-    return getTotalIncome() - getTotalSpent();
-  };
-
+  const getTotalBudget = () => budgets.reduce((sum, c) => sum + c.allocated, 0);
+  const getTotalSpent = () => budgets.reduce((sum, c) => sum + c.spent, 0);
+  const getTotalIncome = () => income.reduce((sum, s) => sum + s.amount, 0);
+  const getCurrentBalance = () => getTotalIncome() - getTotalSpent();
   const getBudgetUsagePercentage = () => {
-    const totalBudget = getTotalBudget();
-    const totalSpent = getTotalSpent();
-    return totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+    const tb = getTotalBudget(); const ts = getTotalSpent();
+    return tb > 0 ? Math.round((ts / tb) * 100) : 0;
   };
-
   const getSavingsPercentage = () => {
-    const totalIncome = getTotalIncome();
-    const totalSpent = getTotalSpent();
-    const savings = totalIncome - totalSpent;
-    return totalIncome > 0 ? Math.round((savings / totalIncome) * 100) : 0;
+    const ti = getTotalIncome(); const ts = getTotalSpent();
+    return ti > 0 ? Math.round(((ti - ts) / ti) * 100) : 0;
   };
 
   const refreshTransactions = async () => {
     if (!user || !tenantId) return;
-
     try {
-      const { data: transactionData } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false });
-
-      if (transactionData) {
-        setTransactions(transactionData as unknown as Transaction[]);
-      }
-    } catch (error) {
-      console.error('Error refreshing transactions:', error);
-    }
+      const { data } = await supabase.from('transactions').select('*')
+        .eq('user_id', user.id).eq('tenant_id', tenantId).order('created_at', { ascending: false });
+      if (data) setTransactions(data as unknown as Transaction[]);
+    } catch (error) { console.error('Error refreshing transactions:', error); }
   };
 
   const value: BudgetContextType = {
-    budgets,
-    income,
-    transactions,
-    setBudgets,
-    addIncome,
-    addBudget,
-    processPayment,
-    refreshTransactions,
-    getTotalBudget,
-    getTotalSpent,
-    getTotalIncome,
-    getCurrentBalance,
-    getBudgetUsagePercentage,
-    getSavingsPercentage
+    budgets, income, transactions, setBudgets, addIncome, addBudget, updateBudgetAmount, deleteBudget,
+    processPayment, refreshTransactions, getTotalBudget, getTotalSpent, getTotalIncome,
+    getCurrentBalance, getBudgetUsagePercentage, getSavingsPercentage
   };
 
-  return (
-    <BudgetContext.Provider value={value}>
-      {children}
-    </BudgetContext.Provider>
-  );
+  return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;
 };
 
 export const useBudget = () => {
   const context = useContext(BudgetContext);
-  if (context === undefined) {
-    throw new Error('useBudget must be used within a BudgetProvider');
-  }
+  if (context === undefined) throw new Error('useBudget must be used within a BudgetProvider');
   return context;
 };
