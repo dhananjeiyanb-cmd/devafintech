@@ -8,7 +8,9 @@ import {
   User, 
   LogOut,
   TrendingUp,
-  CalendarDays
+  CalendarDays,
+  PlusCircle,
+  BarChart3
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -25,7 +27,9 @@ import {
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Add Expense", url: "/add-expense", icon: PlusCircle },
   { title: "Transactions", url: "/transactions", icon: CreditCard },
+  { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Budget Management", url: "/budget", icon: Target },
   { title: "Savings Goals", url: "/savings", icon: PiggyBank },
   { title: "Bill Reminders", url: "/reminders", icon: CalendarDays },
