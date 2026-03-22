@@ -328,7 +328,8 @@ const Budget = () => {
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       <li>
 </li>
-                      <li>• Review and adjust budgets monthly</li>
+                      <li>
+</li>
                       <li>• Set alerts when you reach 80% of any budget</li>
                     </ul>
                   </div>
@@ -340,7 +341,8 @@ const Budget = () => {
 </li>
                       <li>
 </li>
-                      <li>• Track every expense for better control</li>
+                      <li>
+</li>
                     </ul>
                   </div>
                 </div>
@@ -373,8 +375,7 @@ const Budget = () => {
                   </div> : <div className="text-center py-8">
                     <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No budgets created yet.</p>
-                  </div>
-                }
+                  </div>}
               </CardContent>
             </Card>
           </TabsContent>
@@ -393,8 +394,7 @@ const Budget = () => {
             <div>
               <Label>New Amount (₹)</Label>
               <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} min={0} />
-              {editingBudget && parseFloat(editAmount) > editingBudget.allocated &&
-              <p className="text-xs text-muted-foreground mt-1">
+              {editingBudget && parseFloat(editAmount) > editingBudget.allocated && <p className="text-xs text-muted-foreground mt-1">
                   Increase of ₹{(parseFloat(editAmount) - editingBudget.allocated).toLocaleString()} will be deducted from balance
                 </p>
               }
