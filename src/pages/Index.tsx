@@ -20,8 +20,8 @@ const Index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -33,8 +33,8 @@ const Index = () => {
             <div className="mx-auto w-20 h-20 rounded-full bg-primary flex items-center justify-center">
               <Wallet className="w-10 h-10 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-              Welcome to <span className="text-primary">FinAI</span>
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground">Welcome to DJFIN AI
+              <span className="text-primary">FinAI</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Your intelligent financial companion for budgeting, expense tracking, and smart money management.
@@ -42,19 +42,19 @@ const Index = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="gradient-primary shadow-glow text-lg px-8 py-6"
-              onClick={() => navigate('/auth')}
-            >
+              onClick={() => navigate('/auth')}>
+              
               Get Started
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
+            <Button
+              size="lg"
+              variant="outline"
               className="text-lg px-8 py-6"
-              onClick={() => navigate('/auth')}
-            >
+              onClick={() => navigate('/auth')}>
+              
               Sign In
             </Button>
           </div>
@@ -111,8 +111,8 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Index;
