@@ -13,11 +13,11 @@ import { useBudget } from "@/contexts/BudgetContext";
 import { toast } from "sonner";
 
 const Budget = () => {
-  const { 
+  const {
     budgets, income, addIncome, addBudget, updateBudgetAmount, deleteBudget,
-    getTotalBudget, getTotalSpent, getTotalIncome, getCurrentBalance 
+    getTotalBudget, getTotalSpent, getTotalIncome, getCurrentBalance
   } = useBudget();
-  
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isIncomeDialogOpen, setIsIncomeDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
@@ -37,7 +37,7 @@ const Budget = () => {
   const canCreateBudget = currentBalance > 0;
 
   const getBudgetStatus = (spent: number, budget: number) => {
-    const percentage = (spent / budget) * 100;
+    const percentage = spent / budget * 100;
     if (percentage >= 100) return { status: "exceeded", color: "budget-danger", icon: AlertTriangle };
     if (percentage >= 80) return { status: "warning", color: "budget-warning", icon: AlertTriangle };
     return { status: "good", color: "budget-good", icon: CheckCircle };
@@ -71,7 +71,7 @@ const Budget = () => {
   const handleEditBudget = async () => {
     if (!editingBudget) return;
     const newAmount = parseFloat(editAmount);
-    if (isNaN(newAmount) || newAmount <= 0) { toast.error("Enter a valid amount"); return; }
+    if (isNaN(newAmount) || newAmount <= 0) {toast.error("Enter a valid amount");return;}
     const success = await updateBudgetAmount(editingBudget.id, newAmount);
     if (success) setEditDialogOpen(false);
   };
@@ -151,9 +151,9 @@ const Budget = () => {
                   <div>
                     <Label>Monthly Budget (₹)</Label>
                     <Input type="number" placeholder="5000" value={newBudget.budget} onChange={(e) => setNewBudget({ ...newBudget, budget: e.target.value })} max={currentBalance} />
-                    {newBudget.budget && parseInt(newBudget.budget) > currentBalance && (
-                      <p className="text-xs text-destructive mt-1">Amount exceeds available balance</p>
-                    )}
+                    {newBudget.budget && parseInt(newBudget.budget) > currentBalance &&
+                    <p className="text-xs text-destructive mt-1">Amount exceeds available balance</p>
+                    }
                   </div>
                   <div>
                     <Label>Icon</Label>
@@ -180,8 +180,8 @@ const Budget = () => {
         </div>
 
         {/* Balance Warning */}
-        {!canCreateBudget && (
-          <Card className="border-budget-warning bg-warning-light border">
+        {!canCreateBudget &&
+        <Card className="border-budget-warning bg-warning-light border">
             <CardContent className="p-4 flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
               <div>
@@ -190,7 +190,7 @@ const Budget = () => {
               </div>
             </CardContent>
           </Card>
-        )}
+        }
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
@@ -200,8 +200,8 @@ const Budget = () => {
 
           <TabsContent value="overview" className="space-y-6">
             {/* Income Sources */}
-            {income.length > 0 && (
-              <Card className="gradient-card shadow-card border-0">
+            {income.length > 0 &&
+            <Card className="gradient-card shadow-card border-0">
                 <CardHeader>
                   <CardTitle className="text-card-foreground flex items-center">
                     <Wallet className="w-5 h-5 mr-2 text-income" /> Income Sources
@@ -209,15 +209,15 @@ const Budget = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {income.map((source) => (
-                      <div key={source.id} className="flex items-center justify-between p-3 rounded-lg bg-income/10 border border-income/20">
+                    {income.map((source) =>
+                  <div key={source.id} className="flex items-center justify-between p-3 rounded-lg bg-income/10 border border-income/20">
                         <div>
                           <p className="font-medium text-card-foreground">{(source as any).source || (source as any).name}</p>
                           <p className="text-sm text-muted-foreground">{new Date(source.date).toLocaleDateString()}</p>
                         </div>
                         <p className="font-bold text-income">₹{source.amount.toLocaleString()}</p>
                       </div>
-                    ))}
+                  )}
                   </div>
                   <div className="mt-4 p-3 rounded-lg bg-income/5 border border-income/10">
                     <div className="flex justify-between items-center">
@@ -227,7 +227,7 @@ const Budget = () => {
                   </div>
                 </CardContent>
               </Card>
-            )}
+            }
 
             {/* Budget Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -242,7 +242,7 @@ const Budget = () => {
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-card-foreground">Total Spent</CardTitle></CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-expense">₹{totalSpent.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">{totalBudget > 0 ? `${((totalSpent / totalBudget) * 100).toFixed(1)}% of budget` : 'No budget set'}</p>
+                  <p className="text-xs text-muted-foreground">{totalBudget > 0 ? `${(totalSpent / totalBudget * 100).toFixed(1)}% of budget` : 'No budget set'}</p>
                 </CardContent>
               </Card>
               <Card className="gradient-card shadow-card border-0">
@@ -259,7 +259,7 @@ const Budget = () => {
             {/* Budget Categories with Edit/Delete */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {budgets.map((category) => {
-                const percentage = category.allocated > 0 ? (category.spent / category.allocated) * 100 : 0;
+                const percentage = category.allocated > 0 ? category.spent / category.allocated * 100 : 0;
                 const status = getBudgetStatus(category.spent, category.allocated);
                 const StatusIcon = status.icon;
 
@@ -292,49 +292,54 @@ const Budget = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">{percentage.toFixed(1)}% used</span>
                         <span className={`text-sm font-medium ${percentage >= 100 ? 'text-budget-danger' : percentage >= 80 ? 'text-budget-warning' : 'text-budget-good'}`}>
-                          {percentage >= 100 ? (
-                            <div className="flex items-center"><TrendingDown className="w-4 h-4 mr-1" />Over by ₹{(category.spent - category.allocated).toLocaleString()}</div>
-                          ) : (
-                            <div>₹{(category.allocated - category.spent).toLocaleString()} remaining</div>
-                          )}
+                          {percentage >= 100 ?
+                          <div className="flex items-center"><TrendingDown className="w-4 h-4 mr-1" />Over by ₹{(category.spent - category.allocated).toLocaleString()}</div> :
+
+                          <div>₹{(category.allocated - category.spent).toLocaleString()} remaining</div>
+                          }
                         </span>
                       </div>
                       <div className={`p-3 rounded-lg text-sm ${
-                        status.status === 'exceeded' ? 'bg-destructive/10 text-destructive' :
-                        status.status === 'warning' ? 'bg-warning-light text-warning' : 'bg-success-light text-success'
-                      }`}>
+                      status.status === 'exceeded' ? 'bg-destructive/10 text-destructive' :
+                      status.status === 'warning' ? 'bg-warning-light text-warning' : 'bg-success-light text-success'}`
+                      }>
                         {status.status === 'exceeded' && '⚠️ Budget exceeded! Consider reducing spending.'}
                         {status.status === 'warning' && '🔔 Approaching budget limit. Monitor spending.'}
                         {status.status === 'good' && '✅ Great job! Staying within budget.'}
                       </div>
                     </CardContent>
-                  </Card>
-                );
+                  </Card>);
+
               })}
             </div>
 
             {/* Budget Tips */}
             <Card className="gradient-card shadow-card border-0">
               <CardHeader>
-                <CardTitle className="text-card-foreground flex items-center">
-                  <Target className="w-5 h-5 mr-2 text-accent-vivid" /> Budget Tips
-                </CardTitle>
+                
+
+                
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-card-foreground">Smart Budgeting</h4>
+                    <h4 className="font-semibold text-card-foreground">
+</h4>
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li>• Follow the 50/30/20 rule: 50% needs, 30% wants, 20% savings</li>
+                      <li>
+</li>
                       <li>• Review and adjust budgets monthly</li>
                       <li>• Set alerts when you reach 80% of any budget</li>
                     </ul>
                   </div>
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-card-foreground">Recommendations</h4>
+                    <h4 className="font-semibold text-card-foreground">
+</h4>
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li>• Keep emergency fund = 3-6 months expenses</li>
-                      <li>• Automate savings before spending</li>
+                      <li>
+</li>
+                      <li>
+</li>
                       <li>• Track every expense for better control</li>
                     </ul>
                   </div>
@@ -351,10 +356,8 @@ const Budget = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {budgets.length > 0 ? (
-                  <div className="space-y-4">
-                    {budgets.map(b => (
-                      <div key={b.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                {budgets.length > 0 ? <div className="space-y-4">
+                    {budgets.map((b) => <div key={b.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{b.icon}</span>
                           <div>
@@ -363,18 +366,15 @@ const Budget = () => {
                           </div>
                         </div>
                         <p className="font-bold text-card-foreground">₹{b.allocated.toLocaleString()}</p>
-                      </div>
-                    ))}
+                      </div>)}
                     <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                       <div className="flex justify-between"><span className="font-medium">Total Allocated</span><span className="font-bold">₹{totalBudget.toLocaleString()}</span></div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
+                  </div> : <div className="text-center py-8">
                     <Info className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">No budgets created yet.</p>
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
@@ -393,11 +393,11 @@ const Budget = () => {
             <div>
               <Label>New Amount (₹)</Label>
               <Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} min={0} />
-              {editingBudget && parseFloat(editAmount) > editingBudget.allocated && (
-                <p className="text-xs text-muted-foreground mt-1">
+              {editingBudget && parseFloat(editAmount) > editingBudget.allocated &&
+              <p className="text-xs text-muted-foreground mt-1">
                   Increase of ₹{(parseFloat(editAmount) - editingBudget.allocated).toLocaleString()} will be deducted from balance
                 </p>
-              )}
+              }
             </div>
           </div>
           <DialogFooter>
@@ -424,8 +424,8 @@ const Budget = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Layout>
-  );
+    </Layout>);
+
 };
 
 export default Budget;
