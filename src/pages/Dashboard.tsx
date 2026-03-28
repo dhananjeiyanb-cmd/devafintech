@@ -206,6 +206,9 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Family Health Score */}
+        <HealthScoreWidget />
+
         {/* FinPilot AI */}
         <Card className="gradient-card shadow-card border-0">
           <CardHeader>
