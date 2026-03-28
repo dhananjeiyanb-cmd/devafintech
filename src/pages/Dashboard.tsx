@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { useNavigate } from "react-router-dom";
+import HealthScoreWidget from "@/components/HealthScoreWidget";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: "#f59e0b", Transport: "#1e40af", Shopping: "#ef4444", Bills: "#6b7280",
