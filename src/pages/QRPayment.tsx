@@ -16,7 +16,7 @@ const QRPayment = () => {
   const { budgets, processPayment, getCurrentBalance } = useBudget();
   const { toast } = useToast();
   const [step, setStep] = useState<'scan' | 'details' | 'confirm'>('scan');
-  const [paymentType, setPaymentType] = useState<'upi' | 'bank'>('upi');
+  const [paymentType, setPaymentType] = useState<'upi' | 'bank' | 'aadhaar'>('upi');
   const [paymentDetails, setPaymentDetails] = useState({
     merchant: "Coffee Bean Cafe",
     amount: 450,
