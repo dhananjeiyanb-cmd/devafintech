@@ -312,8 +312,8 @@ const QRPayment = () => {
                 <Input
                   id="merchant"
                   value={paymentDetails.merchant}
-                  readOnly
-                  className="bg-muted"
+                  onChange={(e) => setPaymentDetails({ ...paymentDetails, merchant: e.target.value })}
+                  placeholder="Enter merchant name"
                 />
               </div>
               
