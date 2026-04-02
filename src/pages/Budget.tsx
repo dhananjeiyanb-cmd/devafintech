@@ -12,6 +12,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBudget } from "@/contexts/BudgetContext";
 import { toast } from "sonner";
 
+const priorityCategories = [
+  { priority: "🔴 High Priority", label: "Essential Needs (50–60% of income)", color: "text-destructive", bg: "bg-destructive/10 border-destructive/20", categories: [
+    { name: "House Rent / Home Loan EMI", icon: "🏠" },
+    { name: "Food & Groceries", icon: "🍛" },
+    { name: "Electricity, Water, Gas Bills", icon: "💡" },
+    { name: "Medical Expenses / Insurance", icon: "🏥" },
+    { name: "Education Fees", icon: "🎓" },
+    { name: "Basic Transport", icon: "🚗" },
+  ]},
+  { priority: "🟠 Medium Priority", label: "Important (20–30% of income)", color: "text-warning", bg: "bg-warning/10 border-warning/20", categories: [
+    { name: "Mobile & Internet Bills", icon: "📶" },
+    { name: "Loan EMIs", icon: "🧾" },
+    { name: "Clothing", icon: "👕" },
+    { name: "House Maintenance", icon: "🏠" },
+    { name: "Child-related Expenses", icon: "👶" },
+    { name: "Support for Parents", icon: "🧓" },
+  ]},
+  { priority: "🟡 Financial Security", label: "Save 10–20% of income", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20", categories: [
+    { name: "Savings (Emergency Fund)", icon: "💰" },
+    { name: "Investments (SIP, FD, RD)", icon: "📈" },
+    { name: "Insurance (Life + Health)", icon: "🛡️" },
+    { name: "Retirement Planning", icon: "🧾" },
+  ]},
+  { priority: "🟢 Low Priority", label: "Lifestyle (5–10% of income)", color: "text-income", bg: "bg-income/10 border-income/20", categories: [
+    { name: "Eating Out / Food Delivery", icon: "🍔" },
+    { name: "Movies & OTT Subscriptions", icon: "🎬" },
+    { name: "Shopping (Non-essential)", icon: "🛍️" },
+    { name: "Gadgets Upgrades", icon: "📱" },
+    { name: "Travel & Vacations", icon: "✈️" },
+  ]},
+];
+
 const Budget = () => {
   const {
     budgets, income, addIncome, addBudget, updateBudgetAmount, deleteBudget,
@@ -145,8 +177,24 @@ const Budget = () => {
                     <p className="text-lg font-bold text-income">₹{Math.round(currentBalance).toLocaleString()}</p>
                   </div>
                   <div>
-                    <Label>Category Name</Label>
-                    <Input placeholder="e.g., Groceries" value={newBudget.name} onChange={(e) => setNewBudget({ ...newBudget, name: e.target.value })} />
+                    <Label>Category</Label>
+                    <Select value={newBudget.name} onValueChange={(v) => {
+                      const allCats = priorityCategories.flatMap(p => p.categories);
+                      const found = allCats.find(c => c.name === v);
+                      setNewBudget({ ...newBudget, name: v, icon: found?.icon || "💰" });
+                    }}>
+                      <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                      <SelectContent>
+                        {priorityCategories.map((group) => (
+                          <div key={group.priority}>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{group.priority}</div>
+                            {group.categories.map((cat) => (
+                              <SelectItem key={cat.name} value={cat.name}>{cat.icon} {cat.name}</SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Monthly Budget (₹)</Label>
@@ -193,9 +241,10 @@ const Budget = () => {
         }
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Budget Overview</TabsTrigger>
-            <TabsTrigger value="info">Budget Information</TabsTrigger>
+            <TabsTrigger value="priority">Priority Guide</TabsTrigger>
+            <TabsTrigger value="info">Budget Summary</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -348,6 +397,71 @@ const Budget = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="priority" className="space-y-6">
+            {priorityCategories.map((group) => {
+              const totalIncome = getTotalIncome();
+              const groupBudgets = budgets.filter(b => group.categories.some(c => c.name === b.name));
+              const groupTotal = groupBudgets.reduce((s, b) => s + b.allocated, 0);
+              const groupSpent = groupBudgets.reduce((s, b) => s + b.spent, 0);
+
+              return (
+                <Card key={group.priority} className={`border ${group.bg} shadow-card`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className={`text-lg ${group.color}`}>{group.priority}</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">{group.label}</p>
+                      </div>
+                      {totalIncome > 0 && (
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Allocated</p>
+                          <p className={`text-lg font-bold ${group.color}`}>₹{groupTotal.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">{((groupTotal / totalIncome) * 100).toFixed(1)}% of income</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {group.categories.map((cat) => {
+                        const existing = budgets.find(b => b.name === cat.name);
+                        return (
+                          <div key={cat.name} className={`flex items-center justify-between p-3 rounded-lg ${existing ? 'bg-background border border-border' : 'bg-muted/50 border border-dashed border-muted-foreground/20'}`}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{cat.icon}</span>
+                              <div>
+                                <p className="text-sm font-medium text-card-foreground">{cat.name}</p>
+                                {existing ? (
+                                  <p className="text-xs text-muted-foreground">₹{existing.spent.toLocaleString()} / ₹{existing.allocated.toLocaleString()}</p>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground italic">Not set</p>
+                                )}
+                              </div>
+                            </div>
+                            {existing && (
+                              <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                existing.spent / existing.allocated >= 1 ? 'bg-destructive/10 text-destructive' :
+                                existing.spent / existing.allocated >= 0.8 ? 'bg-warning/10 text-warning' : 'bg-income/10 text-income'
+                              }`}>
+                                {((existing.spent / existing.allocated) * 100).toFixed(0)}%
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {groupSpent > 0 && (
+                      <div className="mt-4">
+                        <Progress value={groupTotal > 0 ? Math.min((groupSpent / groupTotal) * 100, 100) : 0} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">₹{groupSpent.toLocaleString()} spent of ₹{groupTotal.toLocaleString()} allocated</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </TabsContent>
 
           <TabsContent value="info" className="space-y-6">
