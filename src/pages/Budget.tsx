@@ -12,6 +12,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBudget } from "@/contexts/BudgetContext";
 import { toast } from "sonner";
 
+const priorityCategories = [
+  { priority: "🔴 High Priority", label: "Essential Needs (50–60% of income)", color: "text-destructive", bg: "bg-destructive/10 border-destructive/20", categories: [
+    { name: "House Rent / Home Loan EMI", icon: "🏠" },
+    { name: "Food & Groceries", icon: "🍛" },
+    { name: "Electricity, Water, Gas Bills", icon: "💡" },
+    { name: "Medical Expenses / Insurance", icon: "🏥" },
+    { name: "Education Fees", icon: "🎓" },
+    { name: "Basic Transport", icon: "🚗" },
+  ]},
+  { priority: "🟠 Medium Priority", label: "Important (20–30% of income)", color: "text-warning", bg: "bg-warning/10 border-warning/20", categories: [
+    { name: "Mobile & Internet Bills", icon: "📶" },
+    { name: "Loan EMIs", icon: "🧾" },
+    { name: "Clothing", icon: "👕" },
+    { name: "House Maintenance", icon: "🏠" },
+    { name: "Child-related Expenses", icon: "👶" },
+    { name: "Support for Parents", icon: "🧓" },
+  ]},
+  { priority: "🟡 Financial Security", label: "Save 10–20% of income", color: "text-yellow-500", bg: "bg-yellow-500/10 border-yellow-500/20", categories: [
+    { name: "Savings (Emergency Fund)", icon: "💰" },
+    { name: "Investments (SIP, FD, RD)", icon: "📈" },
+    { name: "Insurance (Life + Health)", icon: "🛡️" },
+    { name: "Retirement Planning", icon: "🧾" },
+  ]},
+  { priority: "🟢 Low Priority", label: "Lifestyle (5–10% of income)", color: "text-income", bg: "bg-income/10 border-income/20", categories: [
+    { name: "Eating Out / Food Delivery", icon: "🍔" },
+    { name: "Movies & OTT Subscriptions", icon: "🎬" },
+    { name: "Shopping (Non-essential)", icon: "🛍️" },
+    { name: "Gadgets Upgrades", icon: "📱" },
+    { name: "Travel & Vacations", icon: "✈️" },
+  ]},
+];
+
 const Budget = () => {
   const {
     budgets, income, addIncome, addBudget, updateBudgetAmount, deleteBudget,
