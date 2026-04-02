@@ -307,6 +307,109 @@ const QRPayment = () => {
                     </Button>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="aadhaar" className="space-y-4">
+                  <div className="text-center mb-4">
+                    <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center mx-auto mb-3">
+                      <WifiOff className="w-7 h-7 text-accent-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-card-foreground">Offline Aadhaar Transfer</h3>
+                    <p className="text-sm text-muted-foreground">Transfer up to ₹5,000 without internet</p>
+                  </div>
+
+                  <Alert className="border-primary/30 bg-primary/5">
+                    <Fingerprint className="w-4 h-4 text-primary" />
+                    <AlertDescription className="text-sm text-muted-foreground">
+                      This uses Aadhaar-based payment (like AEPS/USSD). Works without internet connectivity. Maximum limit: <strong className="text-card-foreground">₹5,000</strong> per transaction.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="senderAadhaar">Your Aadhaar Number</Label>
+                      <Input
+                        id="senderAadhaar"
+                        placeholder="Enter 12-digit Aadhaar number"
+                        value={aadhaarDetails.senderAadhaar}
+                        maxLength={12}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setAadhaarDetails({ ...aadhaarDetails, senderAadhaar: val });
+                        }}
+                      />
+                      {aadhaarDetails.senderAadhaar && aadhaarDetails.senderAadhaar.length !== 12 && (
+                        <p className="text-xs text-destructive mt-1">Aadhaar number must be 12 digits</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="recipientName">Recipient Name</Label>
+                      <Input
+                        id="recipientName"
+                        placeholder="Enter recipient name"
+                        value={aadhaarDetails.recipientName}
+                        onChange={(e) => setAadhaarDetails({ ...aadhaarDetails, recipientName: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="recipientAadhaar">Recipient Aadhaar Number</Label>
+                      <Input
+                        id="recipientAadhaar"
+                        placeholder="Enter 12-digit Aadhaar number"
+                        value={aadhaarDetails.recipientAadhaar}
+                        maxLength={12}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setAadhaarDetails({ ...aadhaarDetails, recipientAadhaar: val });
+                        }}
+                      />
+                      {aadhaarDetails.recipientAadhaar && aadhaarDetails.recipientAadhaar.length !== 12 && (
+                        <p className="text-xs text-destructive mt-1">Aadhaar number must be 12 digits</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="aadhaarAmount">Amount (Max ₹5,000)</Label>
+                      <Input
+                        id="aadhaarAmount"
+                        type="number"
+                        placeholder="Enter amount"
+                        max={5000}
+                        value={paymentDetails.amount || ''}
+                        onChange={(e) => {
+                          const amt = Number(e.target.value);
+                          if (amt <= 5000) {
+                            setPaymentDetails(prev => ({ ...prev, amount: amt }));
+                          }
+                        }}
+                      />
+                      {paymentDetails.amount > 5000 && (
+                        <p className="text-xs text-destructive mt-1">Maximum ₹5,000 allowed for offline Aadhaar transfer</p>
+                      )}
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        if (paymentDetails.amount > 5000) {
+                          toast({
+                            title: "Amount Exceeds Limit",
+                            description: "Offline Aadhaar transfers are limited to ₹5,000",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        setPaymentDetails(prev => ({ ...prev, merchant: aadhaarDetails.recipientName }));
+                        setStep('details');
+                      }} 
+                      className="w-full gradient-primary"
+                      disabled={
+                        !aadhaarDetails.senderAadhaar || aadhaarDetails.senderAadhaar.length !== 12 ||
+                        !aadhaarDetails.recipientAadhaar || aadhaarDetails.recipientAadhaar.length !== 12 ||
+                        !aadhaarDetails.recipientName || !paymentDetails.amount || paymentDetails.amount > 5000
+                      }
+                    >
+                      <Fingerprint className="w-4 h-4 mr-2" />
+                      Continue with Aadhaar Transfer
+                    </Button>
+                  </div>
+                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
