@@ -177,8 +177,24 @@ const Budget = () => {
                     <p className="text-lg font-bold text-income">₹{Math.round(currentBalance).toLocaleString()}</p>
                   </div>
                   <div>
-                    <Label>Category Name</Label>
-                    <Input placeholder="e.g., Groceries" value={newBudget.name} onChange={(e) => setNewBudget({ ...newBudget, name: e.target.value })} />
+                    <Label>Category</Label>
+                    <Select value={newBudget.name} onValueChange={(v) => {
+                      const allCats = priorityCategories.flatMap(p => p.categories);
+                      const found = allCats.find(c => c.name === v);
+                      setNewBudget({ ...newBudget, name: v, icon: found?.icon || "💰" });
+                    }}>
+                      <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                      <SelectContent>
+                        {priorityCategories.map((group) => (
+                          <div key={group.priority}>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{group.priority}</div>
+                            {group.categories.map((cat) => (
+                              <SelectItem key={cat.name} value={cat.name}>{cat.icon} {cat.name}</SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Monthly Budget (₹)</Label>
