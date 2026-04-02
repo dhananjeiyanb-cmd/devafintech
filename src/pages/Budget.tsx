@@ -241,9 +241,10 @@ const Budget = () => {
         }
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Budget Overview</TabsTrigger>
-            <TabsTrigger value="info">Budget Information</TabsTrigger>
+            <TabsTrigger value="priority">Priority Guide</TabsTrigger>
+            <TabsTrigger value="info">Budget Summary</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
