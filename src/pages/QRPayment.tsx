@@ -286,7 +286,10 @@ const QRPayment = () => {
                       />
                     </div>
                     <Button 
-                      onClick={() => setStep('details')} 
+                      onClick={() => {
+                        setPaymentDetails(prev => ({ ...prev, merchant: bankDetails.beneficiaryName }));
+                        setStep('details');
+                      }} 
                       className="w-full gradient-primary"
                       disabled={!bankDetails.beneficiaryName || !bankDetails.accountNumber || !bankDetails.ifscCode}
                     >
@@ -312,8 +315,8 @@ const QRPayment = () => {
                 <Input
                   id="merchant"
                   value={paymentDetails.merchant}
-                  readOnly
-                  className="bg-muted"
+                  onChange={(e) => setPaymentDetails({ ...paymentDetails, merchant: e.target.value })}
+                  placeholder="Enter merchant name"
                 />
               </div>
               
