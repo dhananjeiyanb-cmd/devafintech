@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Layout } from "@/components/Layout";
-import { QrCode, Scan, AlertTriangle, CheckCircle, CreditCard, DollarSign, Camera, Smartphone, Building2 } from "lucide-react";
+import { QrCode, Scan, AlertTriangle, CheckCircle, CreditCard, DollarSign, Camera, Smartphone, Building2, Fingerprint, WifiOff } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,7 @@ const QRPayment = () => {
   const { budgets, processPayment, getCurrentBalance } = useBudget();
   const { toast } = useToast();
   const [step, setStep] = useState<'scan' | 'details' | 'confirm'>('scan');
-  const [paymentType, setPaymentType] = useState<'upi' | 'bank'>('upi');
+  const [paymentType, setPaymentType] = useState<'upi' | 'bank' | 'aadhaar'>('upi');
   const [paymentDetails, setPaymentDetails] = useState({
     merchant: "Coffee Bean Cafe",
     amount: 450,
@@ -27,6 +27,11 @@ const QRPayment = () => {
     accountNumber: "",
     ifscCode: "",
     beneficiaryName: ""
+  });
+  const [aadhaarDetails, setAadhaarDetails] = useState({
+    senderAadhaar: "",
+    recipientAadhaar: "",
+    recipientName: "",
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
@@ -183,15 +188,19 @@ const QRPayment = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Payment Method Tabs */}
-              <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'upi' | 'bank')}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="upi" className="flex items-center gap-2">
-                    <Smartphone className="w-4 h-4" />
-                    UPI Payment
+              <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'upi' | 'bank' | 'aadhaar')}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="upi" className="flex items-center gap-1 text-xs">
+                    <Smartphone className="w-3 h-3" />
+                    UPI
                   </TabsTrigger>
-                  <TabsTrigger value="bank" className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4" />
-                    Bank Transfer
+                  <TabsTrigger value="bank" className="flex items-center gap-1 text-xs">
+                    <Building2 className="w-3 h-3" />
+                    Bank
+                  </TabsTrigger>
+                  <TabsTrigger value="aadhaar" className="flex items-center gap-1 text-xs">
+                    <Fingerprint className="w-3 h-3" />
+                    Aadhaar
                   </TabsTrigger>
                 </TabsList>
 
@@ -295,6 +304,109 @@ const QRPayment = () => {
                     >
                       <Building2 className="w-4 h-4 mr-2" />
                       Continue with Bank Transfer
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="aadhaar" className="space-y-4">
+                  <div className="text-center mb-4">
+                    <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center mx-auto mb-3">
+                      <WifiOff className="w-7 h-7 text-accent-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-card-foreground">Offline Aadhaar Transfer</h3>
+                    <p className="text-sm text-muted-foreground">Transfer up to ₹5,000 without internet</p>
+                  </div>
+
+                  <Alert className="border-primary/30 bg-primary/5">
+                    <Fingerprint className="w-4 h-4 text-primary" />
+                    <AlertDescription className="text-sm text-muted-foreground">
+                      This uses Aadhaar-based payment (like AEPS/USSD). Works without internet connectivity. Maximum limit: <strong className="text-card-foreground">₹5,000</strong> per transaction.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="senderAadhaar">Your Aadhaar Number</Label>
+                      <Input
+                        id="senderAadhaar"
+                        placeholder="Enter 12-digit Aadhaar number"
+                        value={aadhaarDetails.senderAadhaar}
+                        maxLength={12}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setAadhaarDetails({ ...aadhaarDetails, senderAadhaar: val });
+                        }}
+                      />
+                      {aadhaarDetails.senderAadhaar && aadhaarDetails.senderAadhaar.length !== 12 && (
+                        <p className="text-xs text-destructive mt-1">Aadhaar number must be 12 digits</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="recipientName">Recipient Name</Label>
+                      <Input
+                        id="recipientName"
+                        placeholder="Enter recipient name"
+                        value={aadhaarDetails.recipientName}
+                        onChange={(e) => setAadhaarDetails({ ...aadhaarDetails, recipientName: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="recipientAadhaar">Recipient Aadhaar Number</Label>
+                      <Input
+                        id="recipientAadhaar"
+                        placeholder="Enter 12-digit Aadhaar number"
+                        value={aadhaarDetails.recipientAadhaar}
+                        maxLength={12}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setAadhaarDetails({ ...aadhaarDetails, recipientAadhaar: val });
+                        }}
+                      />
+                      {aadhaarDetails.recipientAadhaar && aadhaarDetails.recipientAadhaar.length !== 12 && (
+                        <p className="text-xs text-destructive mt-1">Aadhaar number must be 12 digits</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="aadhaarAmount">Amount (Max ₹5,000)</Label>
+                      <Input
+                        id="aadhaarAmount"
+                        type="number"
+                        placeholder="Enter amount"
+                        max={5000}
+                        value={paymentDetails.amount || ''}
+                        onChange={(e) => {
+                          const amt = Number(e.target.value);
+                          if (amt <= 5000) {
+                            setPaymentDetails(prev => ({ ...prev, amount: amt }));
+                          }
+                        }}
+                      />
+                      {paymentDetails.amount > 5000 && (
+                        <p className="text-xs text-destructive mt-1">Maximum ₹5,000 allowed for offline Aadhaar transfer</p>
+                      )}
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        if (paymentDetails.amount > 5000) {
+                          toast({
+                            title: "Amount Exceeds Limit",
+                            description: "Offline Aadhaar transfers are limited to ₹5,000",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        setPaymentDetails(prev => ({ ...prev, merchant: aadhaarDetails.recipientName }));
+                        setStep('details');
+                      }} 
+                      className="w-full gradient-primary"
+                      disabled={
+                        !aadhaarDetails.senderAadhaar || aadhaarDetails.senderAadhaar.length !== 12 ||
+                        !aadhaarDetails.recipientAadhaar || aadhaarDetails.recipientAadhaar.length !== 12 ||
+                        !aadhaarDetails.recipientName || !paymentDetails.amount || paymentDetails.amount > 5000
+                      }
+                    >
+                      <Fingerprint className="w-4 h-4 mr-2" />
+                      Continue with Aadhaar Transfer
                     </Button>
                   </div>
                 </TabsContent>
@@ -447,7 +559,7 @@ const QRPayment = () => {
                   </div>
                  <div className="flex justify-between">
                    <span className="text-muted-foreground">Payment method</span>
-                   <span className="text-card-foreground">{paymentType === 'upi' ? 'UPI' : 'Bank Transfer'}</span>
+                   <span className="text-card-foreground">{paymentType === 'upi' ? 'UPI' : paymentType === 'bank' ? 'Bank Transfer' : 'Aadhaar Offline'}</span>
                  </div>
                 </div>
                 
