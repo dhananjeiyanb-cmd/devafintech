@@ -464,6 +464,7 @@ const Budget = () => {
             })}
           </TabsContent>
 
+          <TabsContent value="info" className="space-y-6">
             <Card className="gradient-card shadow-card border-0">
               <CardHeader>
                 <CardTitle className="text-card-foreground flex items-center">
