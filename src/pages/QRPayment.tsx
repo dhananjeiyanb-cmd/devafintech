@@ -28,6 +28,11 @@ const QRPayment = () => {
     ifscCode: "",
     beneficiaryName: ""
   });
+  const [aadhaarDetails, setAadhaarDetails] = useState({
+    senderAadhaar: "",
+    recipientAadhaar: "",
+    recipientName: "",
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
