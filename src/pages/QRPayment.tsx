@@ -559,7 +559,7 @@ const QRPayment = () => {
                   </div>
                  <div className="flex justify-between">
                    <span className="text-muted-foreground">Payment method</span>
-                   <span className="text-card-foreground">{paymentType === 'upi' ? 'UPI' : 'Bank Transfer'}</span>
+                   <span className="text-card-foreground">{paymentType === 'upi' ? 'UPI' : paymentType === 'bank' ? 'Bank Transfer' : 'Aadhaar Offline'}</span>
                  </div>
                 </div>
                 
