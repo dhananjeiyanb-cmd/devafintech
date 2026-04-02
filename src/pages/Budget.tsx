@@ -399,7 +399,71 @@ const Budget = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="info" className="space-y-6">
+          <TabsContent value="priority" className="space-y-6">
+            {priorityCategories.map((group) => {
+              const totalIncome = getTotalIncome();
+              const groupBudgets = budgets.filter(b => group.categories.some(c => c.name === b.name));
+              const groupTotal = groupBudgets.reduce((s, b) => s + b.allocated, 0);
+              const groupSpent = groupBudgets.reduce((s, b) => s + b.spent, 0);
+
+              return (
+                <Card key={group.priority} className={`border ${group.bg} shadow-card`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className={`text-lg ${group.color}`}>{group.priority}</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">{group.label}</p>
+                      </div>
+                      {totalIncome > 0 && (
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Allocated</p>
+                          <p className={`text-lg font-bold ${group.color}`}>₹{groupTotal.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">{((groupTotal / totalIncome) * 100).toFixed(1)}% of income</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {group.categories.map((cat) => {
+                        const existing = budgets.find(b => b.name === cat.name);
+                        return (
+                          <div key={cat.name} className={`flex items-center justify-between p-3 rounded-lg ${existing ? 'bg-background border border-border' : 'bg-muted/50 border border-dashed border-muted-foreground/20'}`}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{cat.icon}</span>
+                              <div>
+                                <p className="text-sm font-medium text-card-foreground">{cat.name}</p>
+                                {existing ? (
+                                  <p className="text-xs text-muted-foreground">₹{existing.spent.toLocaleString()} / ₹{existing.allocated.toLocaleString()}</p>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground italic">Not set</p>
+                                )}
+                              </div>
+                            </div>
+                            {existing && (
+                              <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                existing.spent / existing.allocated >= 1 ? 'bg-destructive/10 text-destructive' :
+                                existing.spent / existing.allocated >= 0.8 ? 'bg-warning/10 text-warning' : 'bg-income/10 text-income'
+                              }`}>
+                                {((existing.spent / existing.allocated) * 100).toFixed(0)}%
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {groupSpent > 0 && (
+                      <div className="mt-4">
+                        <Progress value={groupTotal > 0 ? Math.min((groupSpent / groupTotal) * 100, 100) : 0} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">₹{groupSpent.toLocaleString()} spent of ₹{groupTotal.toLocaleString()} allocated</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </TabsContent>
+
             <Card className="gradient-card shadow-card border-0">
               <CardHeader>
                 <CardTitle className="text-card-foreground flex items-center">
