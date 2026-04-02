@@ -188,15 +188,19 @@ const QRPayment = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Payment Method Tabs */}
-              <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'upi' | 'bank')}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="upi" className="flex items-center gap-2">
-                    <Smartphone className="w-4 h-4" />
-                    UPI Payment
+              <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'upi' | 'bank' | 'aadhaar')}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="upi" className="flex items-center gap-1 text-xs">
+                    <Smartphone className="w-3 h-3" />
+                    UPI
                   </TabsTrigger>
-                  <TabsTrigger value="bank" className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4" />
-                    Bank Transfer
+                  <TabsTrigger value="bank" className="flex items-center gap-1 text-xs">
+                    <Building2 className="w-3 h-3" />
+                    Bank
+                  </TabsTrigger>
+                  <TabsTrigger value="aadhaar" className="flex items-center gap-1 text-xs">
+                    <Fingerprint className="w-3 h-3" />
+                    Aadhaar
                   </TabsTrigger>
                 </TabsList>
 
