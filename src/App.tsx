@@ -17,6 +17,7 @@ import Reminders from "@/pages/Reminders";
 import Reports from "@/pages/Reports";
 import Form16 from "@/pages/Form16";
 import NotFound from "@/pages/NotFound";
+import AdminDashboard from "@/pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ function App() {
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/404" element={<NotFound />} />
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
