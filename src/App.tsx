@@ -17,6 +17,7 @@ import Reminders from "@/pages/Reminders";
 import Reports from "@/pages/Reports";
 import Form16 from "@/pages/Form16";
 import NotFound from "@/pages/NotFound";
+import AdminDashboard from "@/pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 

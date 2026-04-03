@@ -213,12 +213,34 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const budgetToUpdate = budgets.find(b => b.name === payment.category);
       if (budgetToUpdate) {
+        const newSpent = budgetToUpdate.spent + payment.amount;
         const { data: updatedBudget } = await supabase.from('budgets')
-          .update({ spent: budgetToUpdate.spent + payment.amount })
+          .update({ spent: newSpent })
           .eq('id', budgetToUpdate.id).eq('user_id', user.id).eq('tenant_id', tenantId)
           .select().single();
         if (updatedBudget) {
           setBudgets(budgets.map(b => b.id === (updatedBudget as any).id ? updatedBudget as unknown as BudgetCategory : b));
+        }
+
+        // Auto-generate lead if medical/health budget exceeded
+        const medicalKeywords = ['medical', 'medicine', 'health', 'pharmacy', 'hospital', 'doctor', 'clinic'];
+        const isMedical = medicalKeywords.some(k => budgetToUpdate.name.toLowerCase().includes(k));
+        if (isMedical && newSpent > budgetToUpdate.allocated) {
+          const overspendPct = Math.round(((newSpent - budgetToUpdate.allocated) / budgetToUpdate.allocated) * 100);
+          // Fetch user profile for lead info
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('id', user.id).single();
+          await supabase.from('leads').insert([{
+            user_id: user.id,
+            tenant_id: tenantId,
+            category: budgetToUpdate.name,
+            allocated_amount: budgetToUpdate.allocated,
+            spent_amount: newSpent,
+            overspend_percentage: overspendPct,
+            lead_status: 'new',
+            user_name: profile?.full_name || null,
+            user_email: user.email || null,
+            user_phone: (profile as any)?.phone || null,
+          }]);
         }
       }
       toast.success('Payment processed successfully!');
