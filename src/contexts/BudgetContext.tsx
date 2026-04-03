@@ -96,11 +96,51 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const { data: transactionData } = await supabase.from('transactions').select('*')
         .eq('user_id', user.id).eq('tenant_id', currentTenantId).order('created_at', { ascending: false });
 
-      if (budgetData) setBudgets(budgetData as unknown as BudgetCategory[]);
+      if (budgetData) {
+        setBudgets(budgetData as unknown as BudgetCategory[]);
+        // Auto-check for medical overspends and generate leads
+        checkMedicalOverspends(budgetData as any[]);
+      }
       if (incomeData) setIncome(incomeData as unknown as IncomeSource[]);
       if (transactionData) setTransactions(transactionData as unknown as Transaction[]);
     } catch (error) {
       console.error('Error loading data:', error);
+    }
+  };
+
+  const checkMedicalOverspends = async (budgetData: any[]) => {
+    if (!user || !tenantId) return;
+    const medicalKeywords = ['medical', 'medicine', 'health', 'hospital', 'pharma'];
+    const overspentMedical = budgetData.filter(b => {
+      const name = (b.name || '').toLowerCase();
+      return medicalKeywords.some(k => name.includes(k)) && b.spent > b.allocated;
+    });
+
+    for (const budget of overspentMedical) {
+      // Check if lead already exists for this user+category
+      const { data: existingLead } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('category', 'Medicine');
+      
+      if (existingLead && existingLead.length > 0) continue;
+
+      const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('id', user.id).single();
+      const overspendPct = Math.round(((budget.spent - budget.allocated) / budget.allocated) * 100);
+      
+      await supabase.from('leads').insert([{
+        user_id: user.id,
+        tenant_id: tenantId,
+        category: 'Medicine',
+        allocated_amount: budget.allocated,
+        spent_amount: budget.spent,
+        overspend_percentage: overspendPct,
+        lead_status: 'new',
+        user_name: profile?.full_name || null,
+        user_email: user.email || null,
+        user_phone: profile?.phone || null,
+      }]);
     }
   };
 
