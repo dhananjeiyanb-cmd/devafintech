@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   CreditCard, 
@@ -10,9 +11,12 @@ import {
   TrendingUp,
   CalendarDays,
   BarChart3,
-  FileText
+  FileText,
+  Shield
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar,
   SidebarContent,
