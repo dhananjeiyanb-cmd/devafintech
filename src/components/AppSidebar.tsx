@@ -47,6 +47,25 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .then(({ data }) => {
+        setIsAdmin(data != null && data.length > 0);
+      });
+  }, [user]);
+
+  const allItems = [
+    ...items,
+    ...(isAdmin ? [{ title: "Admin Dashboard", url: "/admin", icon: Shield }] : []),
+  ];
 
   const isActive = (path: string) => currentPath === path;
 
