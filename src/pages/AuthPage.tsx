@@ -127,6 +127,14 @@ const AuthPage = () => {
           <p className="text-sm text-muted-foreground">
             Your intelligent financial management platform
           </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mx-auto"
+            onClick={() => navigate('/admin')}
+          >
+            <Shield className="w-4 h-4 mr-1" /> Admin Login
+          </Button>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
