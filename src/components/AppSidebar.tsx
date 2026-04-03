@@ -14,7 +14,7 @@ import {
   FileText,
   Shield
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -29,7 +29,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+const userItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Transactions", url: "/transactions", icon: CreditCard },
   { title: "Reports", url: "/reports", icon: BarChart3 },
@@ -42,12 +42,16 @@ const items = [
   { title: "Profile", url: "/profile", icon: User },
 ];
 
+const adminItems = [
+  { title: "Admin Dashboard", url: "/admin", icon: Shield },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const currentPath = location.pathname;
+  const navigate = useNavigate();
   const collapsed = state === 'collapsed';
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -62,12 +66,13 @@ export function AppSidebar() {
       });
   }, [user]);
 
-  const allItems = [
-    ...items,
-    ...(isAdmin ? [{ title: "Admin Dashboard", url: "/admin", icon: Shield }] : []),
-  ];
+  // Admins see only admin items, regular users see user items
+  const menuItems = isAdmin ? adminItems : userItems;
 
-  const isActive = (path: string) => currentPath === path;
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <Sidebar
@@ -83,18 +88,20 @@ export function AppSidebar() {
           {!collapsed && (
             <div>
               <div className="text-lg font-bold text-sidebar-foreground">FinAI</div>
-              <div className="text-xs text-sidebar-foreground/70">Smart Finance</div>
+              <div className="text-xs text-sidebar-foreground/70">
+                {isAdmin ? "Admin Panel" : "Smart Finance"}
+              </div>
             </div>
           )}
         </div>
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/80 text-xs uppercase tracking-wider mb-2">
-            {!collapsed && "Main Menu"}
+            {!collapsed && (isAdmin ? "Admin Menu" : "Main Menu")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {allItems.map((item) => (
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -122,10 +129,7 @@ export function AppSidebar() {
           <SidebarMenuButton asChild>
             <button
               className="flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive w-full"
-              onClick={() => {
-                // Handle logout
-                console.log("Logout clicked");
-              }}
+              onClick={handleLogout}
             >
               <LogOut className="w-5 h-5" />
               {!collapsed && <span className="font-medium">Logout</span>}
