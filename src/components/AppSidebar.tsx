@@ -14,7 +14,7 @@ import {
   FileText,
   Shield
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -46,7 +46,33 @@ const adminItems = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield },
 ];
 
-  const isActive = (path: string) => currentPath === path;
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const collapsed = state === 'collapsed';
+  const { user, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .then(({ data }) => {
+        setIsAdmin(data != null && data.length > 0);
+      });
+  }, [user]);
+
+  // Admins see only admin items, regular users see user items
+  const menuItems = isAdmin ? adminItems : userItems;
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <Sidebar
@@ -62,18 +88,20 @@ const adminItems = [
           {!collapsed && (
             <div>
               <div className="text-lg font-bold text-sidebar-foreground">FinAI</div>
-              <div className="text-xs text-sidebar-foreground/70">Smart Finance</div>
+              <div className="text-xs text-sidebar-foreground/70">
+                {isAdmin ? "Admin Panel" : "Smart Finance"}
+              </div>
             </div>
           )}
         </div>
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/80 text-xs uppercase tracking-wider mb-2">
-            {!collapsed && "Main Menu"}
+            {!collapsed && (isAdmin ? "Admin Menu" : "Main Menu")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {allItems.map((item) => (
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
@@ -101,10 +129,7 @@ const adminItems = [
           <SidebarMenuButton asChild>
             <button
               className="flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive w-full"
-              onClick={() => {
-                // Handle logout
-                console.log("Logout clicked");
-              }}
+              onClick={handleLogout}
             >
               <LogOut className="w-5 h-5" />
               {!collapsed && <span className="font-medium">Logout</span>}
