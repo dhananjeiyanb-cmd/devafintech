@@ -41,6 +41,7 @@ function App() {
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/reminders" element={<Reminders />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/404" element={<NotFound />} />
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
