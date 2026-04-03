@@ -29,7 +29,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const items = [
+const userItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Transactions", url: "/transactions", icon: CreditCard },
   { title: "Reports", url: "/reports", icon: BarChart3 },
@@ -42,30 +42,9 @@ const items = [
   { title: "Profile", url: "/profile", icon: User },
 ];
 
-export function AppSidebar() {
-  const { state } = useSidebar();
-  const location = useLocation();
-  const currentPath = location.pathname;
-  const collapsed = state === 'collapsed';
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .then(({ data }) => {
-        setIsAdmin(data != null && data.length > 0);
-      });
-  }, [user]);
-
-  const allItems = [
-    ...items,
-    ...(isAdmin ? [{ title: "Admin Dashboard", url: "/admin", icon: Shield }] : []),
-  ];
+const adminItems = [
+  { title: "Admin Dashboard", url: "/admin", icon: Shield },
+];
 
   const isActive = (path: string) => currentPath === path;
 
