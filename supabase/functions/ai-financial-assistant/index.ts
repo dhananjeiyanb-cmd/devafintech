@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,114 +19,137 @@ serve(async (req) => {
       throw new Error('Message and user_id are required');
     }
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = `https://mtldnjtcnlululyfhghj.supabase.co`;
-    const supabaseKey = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bGRuanRjbmx1bHVseWZoZ2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4NDU0NDAsImV4cCI6MjA2OTQyMTQ0MH0.TIc3MdIvIN3IrEvnxH9_wCd_oBOy-79UKxZmSHuKriA`;
-    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user's financial data
-    const { data: transactions, error: transactionsError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user_id)
-      .order('date', { ascending: false });
+    // Fetch all user financial data in parallel
+    const [transactionsRes, budgetsRes, incomeRes, savingsRes, profileRes] = await Promise.all([
+      supabase.from('transactions').select('*').eq('user_id', user_id).order('date', { ascending: false }),
+      supabase.from('budgets').select('*').eq('user_id', user_id),
+      supabase.from('income').select('*').eq('user_id', user_id),
+      supabase.from('savings_goals').select('*').eq('user_id', user_id),
+      supabase.from('profiles').select('*').eq('id', user_id).single(),
+    ]);
 
-    if (transactionsError) {
-      console.error('Error fetching transactions:', transactionsError);
-    }
+    const transactions = transactionsRes.data || [];
+    const budgets = budgetsRes.data || [];
+    const income = incomeRes.data || [];
+    const savings = savingsRes.data || [];
+    const profile = profileRes.data;
 
-    const { data: budgetCategories, error: budgetError } = await supabase
-      .from('budget_categories')
-      .select('*')
-      .eq('user_id', user_id);
+    // Calculate analytics
+    const totalIncome = income.reduce((sum, i) => sum + Number(i.amount), 0);
+    const totalExpenses = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+    const totalSavingsTarget = savings.reduce((sum, s) => sum + Number(s.target_amount), 0);
+    const totalSavingsCurrent = savings.reduce((sum, s) => sum + Number(s.current_amount), 0);
+    const totalBudgetAllocated = budgets.reduce((sum, b) => sum + Number(b.allocated), 0);
+    const totalBudgetSpent = budgets.reduce((sum, b) => sum + Number(b.spent), 0);
 
-    if (budgetError) {
-      console.error('Error fetching budget categories:', budgetError);
-    }
+    // Category-wise spending
+    const categorySpending: Record<string, number> = {};
+    transactions.filter(t => t.amount < 0).forEach(t => {
+      const cat = t.category || 'General';
+      categorySpending[cat] = (categorySpending[cat] || 0) + Math.abs(Number(t.amount));
+    });
 
-    const { data: incomeData, error: incomeError } = await supabase
-      .from('income_sources')
-      .select('*')
-      .eq('user_id', user_id);
+    // Budget overspend analysis
+    const overspentBudgets = budgets.filter(b => Number(b.spent) > Number(b.allocated)).map(b => ({
+      name: b.name,
+      category: b.category,
+      allocated: b.allocated,
+      spent: b.spent,
+      overspendPercent: Math.round(((Number(b.spent) - Number(b.allocated)) / Number(b.allocated)) * 100)
+    }));
 
-    if (incomeError) {
-      console.error('Error fetching income data:', incomeError);
-    }
+    // Monthly trend (last 6 months)
+    const monthlyData: Record<string, { income: number; expense: number }> = {};
+    transactions.forEach(t => {
+      const month = t.date?.substring(0, 7) || 'unknown';
+      if (!monthlyData[month]) monthlyData[month] = { income: 0, expense: 0 };
+      if (t.amount > 0) monthlyData[month].income += Number(t.amount);
+      else monthlyData[month].expense += Math.abs(Number(t.amount));
+    });
 
-    // Prepare financial context for OpenAI
-    const financialContext = {
-      transactions: transactions || [],
-      budgetCategories: budgetCategories || [],
-      incomeData: incomeData || [],
-      totalTransactions: transactions?.length || 0,
-      totalBudgetCategories: budgetCategories?.length || 0
-    };
+    const systemPrompt = `You are FinPilot, an expert AI financial advisor for Indian families. You analyze personal finance data and provide actionable, personalized advice.
 
-    const systemPrompt = `You are FinPilot, an AI financial assistant specializing in personal finance analysis. Your task is to help users analyze their spending patterns and provide actionable financial advice.
+USER PROFILE:
+- Name: ${profile?.full_name || 'User'}
 
-IMPORTANT: When a user asks about spending analysis by category and time period, follow this structured approach:
+FINANCIAL SUMMARY:
+- Total Income: ₹${totalIncome.toLocaleString()}
+- Total Expenses: ₹${totalExpenses.toLocaleString()}
+- Savings Rate: ${totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome * 100).toFixed(1) : 0}%
+- Total Budget Allocated: ₹${totalBudgetAllocated.toLocaleString()}
+- Total Budget Spent: ₹${totalBudgetSpent.toLocaleString()}
+- Budget Utilization: ${totalBudgetAllocated > 0 ? (totalBudgetSpent / totalBudgetAllocated * 100).toFixed(1) : 0}%
 
-1. FIRST, ask for specific details if not provided:
-   - Start date of the period (format: YYYY-MM-DD)
-   - End date of the period (format: YYYY-MM-DD) 
-   - Specific category to analyze (if not mentioned)
+SAVINGS GOALS:
+${savings.length > 0 ? savings.map(s => `- ${s.title}: ₹${Number(s.current_amount).toLocaleString()} / ₹${Number(s.target_amount).toLocaleString()} (${(Number(s.current_amount)/Number(s.target_amount)*100).toFixed(0)}%) - Priority: ${s.priority}`).join('\n') : 'No savings goals set'}
 
-2. THEN, analyze the provided financial data:
-   - Filter transactions by the specified date range and category
-   - Calculate total spent in that category during the period
-   - Compare against budget (if available)
-   - Identify spending patterns and trends
+CATEGORY-WISE SPENDING:
+${Object.entries(categorySpending).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => `- ${cat}: ₹${amt.toLocaleString()}`).join('\n') || 'No spending data'}
 
-3. FINALLY, provide:
-   - Clear summary with total amount spent
-   - Budget comparison (if applicable)
-   - Practical suggestions for budget management
-   - Recommendations for financial tools or services
-   - Tips for adjusting spending habits
+BUDGET HEALTH:
+${budgets.map(b => `- ${b.name} (${b.category}): Allocated ₹${Number(b.allocated).toLocaleString()}, Spent ₹${Number(b.spent).toLocaleString()} ${Number(b.spent) > Number(b.allocated) ? '⚠️ OVERSPENT' : '✅'}`).join('\n') || 'No budgets set'}
 
-Available financial data for analysis:
-- Total transactions: ${financialContext.totalTransactions}
-- Budget categories: ${financialContext.totalBudgetCategories}
-- Transaction categories: ${[...new Set(transactions?.map(t => t.category) || [])].join(', ')}
+OVERSPENT CATEGORIES:
+${overspentBudgets.length > 0 ? overspentBudgets.map(b => `- ${b.name}: ${b.overspendPercent}% over budget`).join('\n') : 'None - all within budget!'}
 
-Current financial snapshot:
-${JSON.stringify(financialContext, null, 2)}
+MONTHLY TRENDS:
+${Object.entries(monthlyData).sort().slice(-6).map(([m, d]) => `- ${m}: Income ₹${d.income.toLocaleString()}, Expense ₹${d.expense.toLocaleString()}`).join('\n') || 'No trend data'}
 
-Provide helpful, actionable advice based on the user's actual financial data. If asking for specific date ranges or categories, be conversational and helpful.`;
+RECENT TRANSACTIONS (last 10):
+${transactions.slice(0, 10).map(t => `- ${t.date}: ${t.description} | ₹${Math.abs(Number(t.amount)).toLocaleString()} (${t.category}) [${t.amount > 0 ? 'Income' : 'Expense'}]`).join('\n') || 'No transactions'}
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+GUIDELINES FOR ADVICE:
+1. Always use ₹ (Indian Rupees) for amounts
+2. Recommend Indian investment options: SIP, PPF, NPS, ELSS, FD, RD, Gold ETFs, Sukanya Samriddhi (if applicable)
+3. Reference Indian tax benefits under 80C, 80D, HRA, etc.
+4. Suggest 50-30-20 or priority-based budgeting rules
+5. If medical spending is high, recommend health insurance plans
+6. For overspent categories, give specific reduction strategies
+7. Be encouraging but honest about financial health
+8. Give specific numbers and percentages in analysis
+9. Suggest emergency fund of 6 months expenses
+10. Recommend diversified portfolio based on risk profile`;
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-3-flash-preview',
         messages: [
-          { 
-            role: 'system', 
-            content: systemPrompt
-          },
-          { 
-            role: 'user', 
-            content: message 
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1500
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('AI Gateway error:', response.status, errorText);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add funds.' }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -136,9 +158,12 @@ Provide helpful, actionable advice based on the user's actual financial data. If
     return new Response(JSON.stringify({ 
       message: assistantMessage,
       financialSummary: {
-        totalTransactions: financialContext.totalTransactions,
-        availableCategories: [...new Set(transactions?.map(t => t.category) || [])],
-        budgetCategories: budgetCategories?.map(bc => ({ name: bc.name, budget: bc.budget, spent: bc.spent })) || []
+        totalIncome,
+        totalExpenses,
+        savingsRate: totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome * 100).toFixed(1) : '0',
+        overspentCategories: overspentBudgets,
+        categorySpending,
+        totalTransactions: transactions.length,
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
