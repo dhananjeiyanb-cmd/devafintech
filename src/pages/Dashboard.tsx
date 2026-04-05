@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import HealthScoreWidget from "@/components/HealthScoreWidget";
 
