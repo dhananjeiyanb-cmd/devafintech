@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import HealthScoreWidget from "@/components/HealthScoreWidget";
 
@@ -217,14 +218,33 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="h-64 overflow-y-auto space-y-3 p-4 bg-muted/20 rounded-lg">
+            <div className="h-80 overflow-y-auto space-y-3 p-4 bg-muted/20 rounded-lg scroll-smooth">
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] p-3 rounded-2xl ${
-                    msg.type === 'user' ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-card text-card-foreground rounded-bl-sm shadow-card'
-                  }`}>{msg.content}</div>
+                  <div className={`max-w-[85%] p-3 rounded-2xl ${
+                    msg.type === 'user' 
+                      ? 'bg-primary text-primary-foreground rounded-br-sm' 
+                      : 'bg-card text-card-foreground rounded-bl-sm shadow-card'
+                  }`}>
+                    {msg.type === 'bot' ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1 [&>h1]:text-base [&>h2]:text-sm [&>h3]:text-sm [&>h1]:font-bold [&>h2]:font-semibold [&>h3]:font-medium [&>li]:my-0.5 [&>ul]:pl-4 [&>ol]:pl-4 [&_strong]:text-primary [&_code]:bg-muted [&_code]:px-1 [&_code]:rounded [&_code]:text-xs">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
                 </div>
               ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-card text-card-foreground rounded-2xl rounded-bl-sm shadow-card p-3 flex gap-1">
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Input value={message} onChange={(e) => setMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
