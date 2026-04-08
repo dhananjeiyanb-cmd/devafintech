@@ -33,8 +33,8 @@ const Index = () => {
             <div className="mx-auto w-20 h-20 rounded-full bg-primary flex items-center justify-center">
               <Wallet className="w-10 h-10 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground">Welcome to DJFIN AI
-              <span className="text-primary">FinAI</span>
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground">
+              Welcome to <span className="text-primary">FIN AI</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Your intelligent financial companion for budgeting, expense tracking, and smart money management.
