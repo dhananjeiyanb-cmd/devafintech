@@ -110,6 +110,9 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const checkMedicalOverspends = async (budgetData: any[]) => {
     if (!user || !tenantId) return;
+    // Respect user's lead-sharing preference (opt-out)
+    const sharingEnabled = localStorage.getItem(`leadSharing:${user.id}`) !== 'false';
+    if (!sharingEnabled) return;
     const medicalKeywords = ['medical', 'medicine', 'health', 'hospital', 'pharma'];
     const overspentMedical = budgetData.filter(b => {
       const name = (b.name || '').toLowerCase();
@@ -265,7 +268,8 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         // Auto-generate lead if medical/health budget exceeded
         const medicalKeywords = ['medical', 'medicine', 'health', 'pharmacy', 'hospital', 'doctor', 'clinic'];
         const isMedical = medicalKeywords.some(k => budgetToUpdate.name.toLowerCase().includes(k));
-        if (isMedical && newSpent > budgetToUpdate.allocated) {
+        const sharingEnabled = localStorage.getItem(`leadSharing:${user.id}`) !== 'false';
+        if (isMedical && newSpent > budgetToUpdate.allocated && sharingEnabled) {
           const overspendPct = Math.round(((newSpent - budgetToUpdate.allocated) / budgetToUpdate.allocated) * 100);
           // Fetch user profile for lead info
           const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('id', user.id).single();
