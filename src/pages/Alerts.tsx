@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Layout } from "@/components/Layout";
-import { Bell, AlertTriangle, DollarSign, Target, Calendar, Smartphone, Mail } from "lucide-react";
+import { Bell, AlertTriangle, DollarSign, Target, Calendar, Smartphone, Mail, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const alertSettings = [
   {
@@ -130,6 +132,26 @@ const recentAlerts = [
 const Alerts = () => {
   const [alerts, setAlerts] = useState(alertSettings);
   const [notifications, setNotifications] = useState(notificationMethods);
+  const { user } = useAuth();
+  const [shareLeads, setShareLeads] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const stored = localStorage.getItem(`leadSharing:${user.id}`);
+    setShareLeads(stored !== 'false');
+  }, [user]);
+
+  const toggleShareLeads = (value: boolean) => {
+    setShareLeads(value);
+    if (user) {
+      localStorage.setItem(`leadSharing:${user.id}`, value ? 'true' : 'false');
+    }
+    toast.success(
+      value
+        ? 'Lead sharing enabled — admins may receive your overspend alerts'
+        : 'Lead sharing disabled — your data stays private'
+    );
+  };
 
   const toggleAlert = (alertId: string) => {
     setAlerts(alerts.map(alert => 
@@ -175,6 +197,28 @@ const Alerts = () => {
             <CardTitle className="text-card-foreground">Alert Preferences</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Privacy: Lead sharing toggle */}
+            <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20">
+              <div className="flex items-center space-x-4 flex-1">
+                <div className="p-2 rounded-lg bg-muted text-accent-vivid">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="share-leads" className="text-base font-medium text-card-foreground cursor-pointer">
+                    Share Overspend Data with Admins
+                  </Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    When enabled, your overspending in categories like medical/health may be shared as a lead with admins (e.g. for insurance offers). Turn this off to keep your data private.
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="share-leads"
+                checked={shareLeads}
+                onCheckedChange={toggleShareLeads}
+              />
+            </div>
+
             {alerts.map((alert) => {
               const IconComponent = alert.icon;
               return (
